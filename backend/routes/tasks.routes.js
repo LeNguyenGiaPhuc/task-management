@@ -38,6 +38,10 @@ async function ensureTaskTypeColumn() {
     ALTER TABLE tasks
     ADD COLUMN IF NOT EXISTS task_type VARCHAR(20) DEFAULT 'TASK';
   `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE tasks
+    ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP WITH TIME ZONE;
+  `);
 
   ensuredTaskTypeColumn = true;
 }
@@ -67,8 +71,16 @@ const taskInclude = {
 };
 
 async function getTaskBoard(taskId) {
-  return prisma.tasks.findUnique({
-    where: { id: taskId },
+  return prisma.tasks.findFirst({
+    where: {
+      id: taskId,
+      archived_at: null,
+      columns: {
+        boards: {
+          archived_at: null,
+        },
+      },
+    },
     include: {
       columns: {
         select: {
@@ -83,8 +95,10 @@ router.get('/', async (req, res) => {
   try {
     const tasks = await prisma.tasks.findMany({
       where: {
+        archived_at: null,
         columns: {
           boards: {
+            archived_at: null,
             board_members: {
               some: {
                 user_id: req.user.id,
@@ -130,7 +144,7 @@ router.post('/', async (req, res) => {
     if (!role) return;
 
     const lastTask = await prisma.tasks.findFirst({
-      where: { column_id },
+      where: { column_id, archived_at: null },
       orderBy: { order: 'desc' },
     });
     const newOrder = lastTask ? lastTask.order + 1000 : 1000;
@@ -158,6 +172,79 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.get('/archived', async (req, res) => {
+  try {
+    const { board_id } = req.query;
+
+    if (!board_id) {
+      return res.status(400).json({ error: 'Missing board_id' });
+    }
+
+    const role = await requireBoardRole(req, res, board_id, ['MEMBER', 'ADMIN', 'OWNER']);
+    if (!role) return;
+
+    const tasks = await prisma.tasks.findMany({
+      where: {
+        archived_at: { not: null },
+        columns: {
+          board_id,
+          boards: {
+            archived_at: null,
+          },
+        },
+      },
+      orderBy: { archived_at: 'desc' },
+      include: taskInclude,
+    });
+
+    res.status(200).json(tasks);
+  } catch (error) {
+    console.error('GET /api/tasks/archived failed:', error);
+    res.status(500).json({ error: 'Server error while loading archived tasks' });
+  }
+});
+
+router.post('/:id/restore', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const task = await prisma.tasks.findFirst({
+      where: { id, archived_at: { not: null } },
+      include: {
+        columns: {
+          select: {
+            board_id: true,
+            boards: {
+              select: {
+                archived_at: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!task || task.columns.boards.archived_at) {
+      return res.status(404).json({ error: 'Archived task not found' });
+    }
+
+    const role = await requireBoardRole(req, res, task.columns.board_id, ['MEMBER', 'ADMIN', 'OWNER']);
+    if (!role) return;
+
+    const restoredTask = await prisma.tasks.update({
+      where: { id },
+      data: { archived_at: null },
+      include: taskInclude,
+    });
+
+    await logBoardActivity(task.columns.board_id, `Restored task ${task.title}`, req.user.id);
+
+    res.status(200).json(restoredTask);
+  } catch (error) {
+    console.error('POST /api/tasks/:id/restore failed:', error);
+    res.status(500).json({ error: 'Server error while restoring task' });
+  }
+});
+
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -181,19 +268,24 @@ router.put('/:id', async (req, res) => {
     if (assignee_id !== undefined) data.assignee_id = assignee_id || null;
     if (due_date !== undefined) data.due_date = due_date ? new Date(due_date) : null;
 
-    const existingTask = await prisma.tasks.findUnique({
-      where: { id },
+    const existingTask = await prisma.tasks.findFirst({
+      where: { id, archived_at: null },
       include: {
         columns: {
           select: {
             board_id: true,
             title: true,
+            boards: {
+              select: {
+                archived_at: true,
+              },
+            },
           },
         },
       },
     });
 
-    if (!existingTask) {
+    if (!existingTask || existingTask.columns.boards.archived_at) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
@@ -382,7 +474,16 @@ router.delete('/:taskId/comments/:commentId', async (req, res) => {
 router.get('/:id/attachments', async (req, res) => {
   try {
     const { id } = req.params;
-    const task = await getTaskBoard(id);
+    const task = await prisma.tasks.findFirst({
+      where: { id, archived_at: null },
+      include: {
+        columns: {
+          select: {
+            board_id: true,
+          },
+        },
+      },
+    });
 
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
@@ -514,12 +615,15 @@ router.delete('/:id', async (req, res) => {
     const role = await requireBoardRole(req, res, task.columns.board_id, ['MEMBER', 'ADMIN', 'OWNER']);
     if (!role) return;
 
-    await prisma.tasks.delete({ where: { id } });
-    await logBoardActivity(task.columns.board_id, `Deleted task ${task.title}`, req.user.id);
+    await prisma.tasks.update({
+      where: { id },
+      data: { archived_at: new Date() },
+    });
+    await logBoardActivity(task.columns.board_id, `Archived task ${task.title}`, req.user.id);
     res.status(204).send();
   } catch (error) {
     console.error('DELETE /api/tasks/:id failed:', error);
-    res.status(500).json({ error: 'Server error while deleting task' });
+    res.status(500).json({ error: 'Server error while archiving task' });
   }
 });
 

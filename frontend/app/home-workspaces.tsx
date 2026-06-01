@@ -16,6 +16,7 @@ export type HomeBoard = {
   title: string;
   description?: string | null;
   background?: string | null;
+  archived_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   columns?: BoardColumnSummary[];
@@ -64,6 +65,7 @@ function formatDate(value?: string | null) {
 export default function HomeWorkspaces() {
   const router = useRouter();
   const [boards, setBoards] = useState<HomeBoard[]>([]);
+  const [archivedBoards, setArchivedBoards] = useState<HomeBoard[]>([]);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
@@ -80,6 +82,8 @@ export default function HomeWorkspaces() {
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [restoringBoardId, setRestoringBoardId] = useState<string | null>(null);
   const [duplicatingBoardId, setDuplicatingBoardId] = useState<string | null>(null);
   const [activeSidebarItem, setActiveSidebarItem] = useState<SidebarItem>("Spaces");
   const [isSpacesOpen, setIsSpacesOpen] = useState(true);
@@ -136,22 +140,39 @@ export default function HomeWorkspaces() {
     setBoards(boardData);
   }, []);
 
+  const loadArchivedBoards = useCallback(async () => {
+    const response = await apiFetch("/api/boards/archived");
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearAuthToken();
+        setCurrentUser(null);
+        return;
+      }
+      throw new Error("Load archived boards failed");
+    }
+
+    const boardData = (await response.json()) as HomeBoard[];
+    setArchivedBoards(boardData);
+  }, []);
+
   const loadSession = useCallback(async () => {
     const response = await apiFetch("/api/auth/me");
 
     if (!response.ok) {
       clearAuthToken();
       setCurrentUser(null);
-      setBoards([]);
-      setIsAuthChecked(true);
-      return;
+    setBoards([]);
+    setArchivedBoards([]);
+    setIsAuthChecked(true);
+    return;
     }
 
     const data = (await response.json()) as { user: AuthUser };
     setCurrentUser(data.user);
-    await loadBoards();
+    await Promise.all([loadBoards(), loadArchivedBoards()]);
     setIsAuthChecked(true);
-  }, [loadBoards]);
+  }, [loadArchivedBoards, loadBoards]);
 
   useEffect(() => {
     // Restore an existing local JWT session on first client render.
@@ -184,7 +205,7 @@ export default function HomeWorkspaces() {
       setAuthToken(data.token);
       setCurrentUser(data.user);
       setAuthPassword("");
-      await loadBoards();
+      await Promise.all([loadBoards(), loadArchivedBoards()]);
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Could not authenticate.");
     } finally {
@@ -197,6 +218,7 @@ export default function HomeWorkspaces() {
     clearAuthToken();
     setCurrentUser(null);
     setBoards([]);
+    setArchivedBoards([]);
     router.push("/");
   };
 
@@ -279,16 +301,42 @@ export default function HomeWorkspaces() {
         method: "DELETE",
       });
 
-      if (!response.ok) throw new Error("Delete board failed");
+      if (!response.ok) throw new Error("Archive board failed");
 
       setBoards((currentBoards) =>
         currentBoards.filter((board) => board.id !== deletingBoard.id)
       );
+      setArchivedBoards((currentBoards) => [
+        { ...deletingBoard, archived_at: new Date().toISOString() },
+        ...currentBoards,
+      ]);
+      if (selectedBoardId === deletingBoard.id) {
+        setSelectedBoardId(null);
+      }
       setDeletingBoard(null);
     } catch {
-      setError("Khong xoa duoc board. Kiem tra backend roi thu lai.");
+      setError("Khong archive duoc board. Kiem tra backend roi thu lai.");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleRestoreBoard = async (boardId: string) => {
+    setRestoringBoardId(boardId);
+    setError("");
+
+    try {
+      const response = await apiFetch(`/api/boards/${boardId}/restore`, {
+        method: "POST",
+      });
+
+      if (!response.ok) throw new Error("Restore board failed");
+
+      await Promise.all([loadBoards(), loadArchivedBoards()]);
+    } catch {
+      setError("Khong khoi phuc duoc board. Kiem tra backend roi thu lai.");
+    } finally {
+      setRestoringBoardId(null);
     }
   };
 
@@ -588,6 +636,13 @@ export default function HomeWorkspaces() {
               </div>
               <button
                 type="button"
+                onClick={() => setIsArchiveOpen(true)}
+                className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+              >
+                Archived {archivedBoards.length}
+              </button>
+              <button
+                type="button"
                 onClick={() => setQuery("")}
                 disabled={!query.trim()}
                 className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -670,7 +725,7 @@ export default function HomeWorkspaces() {
                           }}
                           className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
                         >
-                          Delete
+                          Archive
                         </button>
                       </div>
                     </div>
@@ -741,9 +796,9 @@ export default function HomeWorkspaces() {
       {deletingBoard && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/30 px-4 py-12">
           <div className="w-full max-w-md rounded-md border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl">
-            <h2 className="text-xl font-bold text-slate-900">Delete board?</h2>
+            <h2 className="text-xl font-bold text-slate-900">Archive board?</h2>
             <p className="mt-2 text-sm text-slate-600">
-              {deletingBoard.title} and all of its columns and tasks will be deleted.
+              {deletingBoard.title} will be hidden from active workspaces. You can restore it later.
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -759,9 +814,61 @@ export default function HomeWorkspaces() {
                 disabled={isDeleting}
                 className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isDeleting ? "Deleting" : "Delete board"}
+                {isDeleting ? "Archiving" : "Archive board"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isArchiveOpen && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/30 px-4 py-12">
+          <div className="w-full max-w-2xl rounded-md border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Archived boards</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Restore boards when you need to bring them back to active workspaces.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsArchiveOpen(false)}
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
+              >
+                Close
+              </button>
+            </div>
+
+            {archivedBoards.length > 0 ? (
+              <div className="grid gap-2">
+                {archivedBoards.map((board) => (
+                  <div
+                    key={board.id}
+                    className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">{board.title}</p>
+                      <p className="text-xs text-slate-500">
+                        Archived {formatDate(board.archived_at)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRestoreBoard(board.id)}
+                      disabled={restoringBoardId === board.id}
+                      className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {restoringBoardId === board.id ? "Restoring" : "Restore"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-md border border-dashed border-slate-200 px-3 py-10 text-center text-sm text-slate-500">
+                No archived boards
+              </div>
+            )}
           </div>
         </div>
       )}

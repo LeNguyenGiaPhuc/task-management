@@ -69,6 +69,7 @@ type Task = {
   assignee_id?: string | null;
   due_date?: string | null;
   order: number;
+  archived_at?: string | null;
   users?: User | null;
   sub_tasks?: SubTask[];
 };
@@ -459,7 +460,7 @@ function TaskDetailModal({
                 disabled={isDeleting}
                 className="rounded-md bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isDeleting ? "Deleting" : "Delete"}
+                {isDeleting ? "Archiving" : "Archive"}
               </button>
               <button
                 type="button"
@@ -679,6 +680,7 @@ export function BoardWorkspace({
   const [boardBackground, setBoardBackground] = useState("");
   const [columns, setColumns] = useState<Column[]>([]);
   const [boardMembers, setBoardMembers] = useState<BoardMember[]>([]);
+  const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [taskComments, setTaskComments] = useState<TaskComment[]>([]);
   const [taskAttachments, setTaskAttachments] = useState<TaskAttachment[]>([]);
@@ -788,6 +790,12 @@ export function BoardWorkspace({
       (a, b) =>
         new Date(a.due_date || 0).getTime() - new Date(b.due_date || 0).getTime()
     );
+  const archivedTaskList = archivedTasks
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(b.archived_at || 0).getTime() - new Date(a.archived_at || 0).getTime()
+    );
   const boardHealth =
     overdueTasks > 0
       ? { label: "Needs attention", className: "bg-red-50 text-red-700 ring-red-200" }
@@ -851,22 +859,25 @@ export function BoardWorkspace({
   };
 
   const fetchBoardData = useCallback(async () => {
-    const [boardResponse, meResponse] = await Promise.all([
+    const [boardResponse, archivedTasksResponse, meResponse] = await Promise.all([
       apiFetch(`/api/boards/${id}`),
+      apiFetch(`/api/tasks/archived?board_id=${encodeURIComponent(id)}`),
       apiFetch("/api/auth/me"),
     ]);
 
-    if (!boardResponse.ok || !meResponse.ok) {
+    if (!boardResponse.ok || !archivedTasksResponse.ok || !meResponse.ok) {
       throw new Error("Load board failed");
     }
 
     const boardData = (await boardResponse.json()) as BoardData;
+    const archivedTaskData = (await archivedTasksResponse.json()) as Task[];
     const meData = (await meResponse.json()) as { user: AuthUser };
 
     setBoardName(boardData.title);
     setBoardDescription(boardData.description || "");
     setBoardBackground(boardData.background || "");
     setBoardMembers(boardData.board_members || []);
+    setArchivedTasks(archivedTaskData.map(normalizeTask));
     setCurrentUser(meData.user);
     setColumns(
       (boardData.columns || []).map((column) => ({
@@ -1237,7 +1248,7 @@ export function BoardWorkspace({
     });
 
     if (!res.ok) {
-      setError("Could not delete task. Try again.");
+      setError("Could not archive task. Try again.");
       return;
     }
 
@@ -1245,6 +1256,22 @@ export function BoardWorkspace({
     setSelectedTaskId(null);
     setError("");
     await fetchBoardData();
+  };
+
+  const handleRestoreTask = async (taskId: string) => {
+    setError("");
+
+    try {
+      const res = await apiFetch(`/api/tasks/${taskId}/restore`, {
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error("Restore task failed");
+
+      await fetchBoardData();
+    } catch {
+      setError("Could not restore task. Try again.");
+    }
   };
 
   const handleDuplicateTask = async () => {
@@ -2268,6 +2295,52 @@ export function BoardWorkspace({
             ) : (
               <div className="rounded-md border border-dashed border-slate-200 px-3 py-8 text-center text-sm text-slate-500">
                 No overdue tasks
+              </div>
+            )}
+          </section>
+
+          <section className={`${reportPanelClass} mt-4`}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Archived tasks</h2>
+                <p className="text-sm text-slate-500">Restore archived work items back to the board.</p>
+              </div>
+              <span className="rounded bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
+                {archivedTaskList.length}
+              </span>
+            </div>
+
+            {archivedTaskList.length > 0 ? (
+              <div className="grid gap-2">
+                {archivedTaskList.slice(0, 8).map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-slate-900">{task.title}</span>
+                      <span className="mt-1 flex flex-wrap gap-2">
+                        <span className={`rounded px-2 py-0.5 text-[10px] font-bold ring-1 ${getTaskTypeClass(task.task_type)}`}>
+                          {task.task_type || "TASK"}
+                        </span>
+                        <span className={`rounded px-2 py-0.5 text-[10px] font-bold ring-1 ${getPriorityClass(task.priority)}`}>
+                          {task.priority || "MEDIUM"}
+                        </span>
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRestoreTask(task.id)}
+                      className="shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500"
+                    >
+                      Restore
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-md border border-dashed border-slate-200 px-3 py-8 text-center text-sm text-slate-500">
+                No archived tasks
               </div>
             )}
           </section>

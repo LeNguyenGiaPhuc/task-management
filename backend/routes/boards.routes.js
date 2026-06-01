@@ -8,17 +8,25 @@ const router = express.Router();
 
 router.use(requireAuth);
 
-let ensuredProjectRoleColumn = false;
+let ensuredBoardColumns = false;
 
-async function ensureBoardMemberProjectRoleColumn() {
-  if (ensuredProjectRoleColumn) return;
+async function ensureBoardColumns() {
+  if (ensuredBoardColumns) return;
 
   await prisma.$executeRawUnsafe(`
     ALTER TABLE board_members
     ADD COLUMN IF NOT EXISTS project_role VARCHAR(255);
   `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE boards
+    ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP WITH TIME ZONE;
+  `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE tasks
+    ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP WITH TIME ZONE;
+  `);
 
-  ensuredProjectRoleColumn = true;
+  ensuredBoardColumns = true;
 }
 
 function createPlaceholderEmail(name) {
@@ -33,11 +41,11 @@ function createPlaceholderEmail(name) {
 
 router.use(async (req, res, next) => {
   try {
-    await ensureBoardMemberProjectRoleColumn();
+    await ensureBoardColumns();
     next();
   } catch (error) {
-    console.error('Ensure project_role column failed:', error);
-    res.status(500).json({ error: 'Server error while preparing board members' });
+    console.error('Ensure board columns failed:', error);
+    res.status(500).json({ error: 'Server error while preparing boards' });
   }
 });
 
@@ -46,6 +54,7 @@ const boardSummaryInclude = {
     select: {
       id: true,
       tasks: {
+        where: { archived_at: null },
         select: { id: true },
       },
     },
@@ -84,6 +93,7 @@ const boardDetailInclude = {
     orderBy: { order: 'asc' },
     include: {
       tasks: {
+        where: { archived_at: null },
         orderBy: { order: 'asc' },
         include: {
           users: {
@@ -107,6 +117,7 @@ router.get('/', async (req, res) => {
   try {
     const boards = await prisma.boards.findMany({
       where: {
+        archived_at: null,
         board_members: {
           some: {
             user_id: req.user.id,
@@ -121,6 +132,28 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('GET /api/boards failed:', error);
     res.status(500).json({ error: 'Server error while loading boards' });
+  }
+});
+
+router.get('/archived', async (req, res) => {
+  try {
+    const boards = await prisma.boards.findMany({
+      where: {
+        archived_at: { not: null },
+        board_members: {
+          some: {
+            user_id: req.user.id,
+          },
+        },
+      },
+      orderBy: { archived_at: 'desc' },
+      include: boardSummaryInclude,
+    });
+
+    res.status(200).json(boards);
+  } catch (error) {
+    console.error('GET /api/boards/archived failed:', error);
+    res.status(500).json({ error: 'Server error while loading archived boards' });
   }
 });
 
@@ -169,8 +202,8 @@ router.post('/:id/duplicate', async (req, res) => {
     if (!role) return;
 
     const ownerId = req.user.id;
-    const sourceBoard = await prisma.boards.findUnique({
-      where: { id },
+    const sourceBoard = await prisma.boards.findFirst({
+      where: { id, archived_at: null },
       include: boardDetailInclude,
     });
 
@@ -211,6 +244,7 @@ router.post('/:id/duplicate', async (req, res) => {
               column_id: newColumn.id,
               title: task.title,
               description: task.description,
+              task_type: task.task_type,
               priority: task.priority,
               assignee_id: null,
               due_date: task.due_date,
@@ -252,14 +286,48 @@ router.post('/:id/duplicate', async (req, res) => {
   }
 });
 
+router.post('/:id/restore', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const role = await requireBoardRole(req, res, id, ['OWNER']);
+    if (!role) return;
+
+    const board = await prisma.boards.findUnique({
+      where: { id },
+      select: { id: true, title: true, archived_at: true },
+    });
+
+    if (!board) {
+      return res.status(404).json({ error: 'Board not found' });
+    }
+
+    if (!board.archived_at) {
+      return res.status(400).json({ error: 'Board is not archived' });
+    }
+
+    const restoredBoard = await prisma.boards.update({
+      where: { id },
+      data: { archived_at: null },
+      include: boardSummaryInclude,
+    });
+
+    await logBoardActivity(id, `Restored board ${board.title}`, req.user.id);
+
+    res.status(200).json(restoredBoard);
+  } catch (error) {
+    console.error('POST /api/boards/:id/restore failed:', error);
+    res.status(500).json({ error: 'Server error while restoring board' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const role = await requireBoardRole(req, res, id, ['MEMBER', 'ADMIN', 'OWNER']);
     if (!role) return;
 
-    const board = await prisma.boards.findUnique({
-      where: { id },
+    const board = await prisma.boards.findFirst({
+      where: { id, archived_at: null },
       include: boardDetailInclude,
     });
 
@@ -285,8 +353,17 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Missing title' });
     }
 
+    const existingBoard = await prisma.boards.findFirst({
+      where: { id, archived_at: null },
+      select: { id: true },
+    });
+
+    if (!existingBoard) {
+      return res.status(404).json({ error: 'Board not found' });
+    }
+
     const updatedBoard = await prisma.boards.update({
-      where: { id },
+      where: { id: existingBoard.id },
       data: {
         title: title.trim(),
         description: cleanText(description),
@@ -517,11 +594,24 @@ router.delete('/:id', async (req, res) => {
     const role = await requireBoardRole(req, res, id, ['OWNER']);
     if (!role) return;
 
-    await prisma.boards.delete({ where: { id } });
+    const board = await prisma.boards.findFirst({
+      where: { id, archived_at: null },
+      select: { title: true },
+    });
+
+    if (!board) {
+      return res.status(404).json({ error: 'Board not found' });
+    }
+
+    await prisma.boards.update({
+      where: { id },
+      data: { archived_at: new Date() },
+    });
+    await logBoardActivity(id, `Archived board ${board.title}`, req.user.id);
     res.status(204).send();
   } catch (error) {
     console.error('DELETE /api/boards/:id failed:', error);
-    res.status(500).json({ error: 'Server error while deleting board' });
+    res.status(500).json({ error: 'Server error while archiving board' });
   }
 });
 
