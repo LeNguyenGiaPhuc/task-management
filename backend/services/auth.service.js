@@ -14,6 +14,14 @@ async function ensureAuthColumn() {
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS password_hash TEXT;
   `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS google_id TEXT;
+  `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(50) DEFAULT 'PASSWORD';
+  `);
 
   ensuredAuthColumn = true;
 }
@@ -44,6 +52,21 @@ function verifyToken(token) {
   return jwt.verify(token, JWT_SECRET);
 }
 
+function signOAuthState() {
+  return jwt.sign(
+    {
+      purpose: 'google_oauth',
+    },
+    JWT_SECRET,
+    { expiresIn: '10m' }
+  );
+}
+
+function verifyOAuthState(state) {
+  const payload = jwt.verify(state, JWT_SECRET);
+  return payload?.purpose === 'google_oauth';
+}
+
 async function hashPassword(password) {
   return bcrypt.hash(password, 12);
 }
@@ -68,12 +91,71 @@ async function getUserWithPasswordByEmail(email) {
   return users[0] || null;
 }
 
+async function upsertGoogleUser(profile) {
+  await ensureAuthColumn();
+
+  const normalizedEmail = profile.email?.trim().toLowerCase();
+  const displayName = profile.name?.trim() || normalizedEmail;
+
+  if (!normalizedEmail) {
+    throw new Error('Google profile did not include an email');
+  }
+
+  const existingUsers = await prisma.$queryRawUnsafe(
+    `
+      SELECT id, email, name, avatar_url, google_id, auth_provider
+      FROM users
+      WHERE lower(email) = lower($1)
+      LIMIT 1
+    `,
+    normalizedEmail
+  );
+
+  if (existingUsers[0]) {
+    const updatedUsers = await prisma.$queryRawUnsafe(
+      `
+        UPDATE users
+        SET
+          name = COALESCE(NULLIF($2, ''), name),
+          avatar_url = COALESCE($3, avatar_url),
+          google_id = $4,
+          auth_provider = 'GOOGLE'
+        WHERE id = $1::uuid
+        RETURNING id, email, name, avatar_url
+      `,
+      existingUsers[0].id,
+      displayName,
+      profile.picture || null,
+      profile.sub || profile.id || null
+    );
+
+    return sanitizeUser(updatedUsers[0]);
+  }
+
+  const users = await prisma.$queryRawUnsafe(
+    `
+      INSERT INTO users (email, name, avatar_url, google_id, auth_provider)
+      VALUES ($1, $2, $3, $4, 'GOOGLE')
+      RETURNING id, email, name, avatar_url
+    `,
+    normalizedEmail,
+    displayName,
+    profile.picture || null,
+    profile.sub || profile.id || null
+  );
+
+  return sanitizeUser(users[0]);
+}
+
 module.exports = {
   comparePassword,
   ensureAuthColumn,
   getUserWithPasswordByEmail,
   hashPassword,
   sanitizeUser,
+  signOAuthState,
   signToken,
+  upsertGoogleUser,
+  verifyOAuthState,
   verifyToken,
 };

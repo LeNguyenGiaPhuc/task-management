@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch, clearAuthToken, setAuthToken, type AuthUser } from "./api";
+import { API_BASE_URL, apiFetch, clearAuthToken, setAuthToken, type AuthUser } from "./api";
 import { BoardWorkspace } from "./boards/[id]/page";
 import CreateBoardButton from "./create-board-button";
 
@@ -62,6 +62,21 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
+function getOAuthErrorMessage(authError: string | null) {
+  if (!authError) return "";
+
+  if (authError === "google_oauth_not_configured") {
+    return "Google login is not configured yet.";
+  }
+
+  return "Google login failed. Please try again.";
+}
+
+function getInitialAuthError() {
+  if (typeof window === "undefined") return "";
+  return getOAuthErrorMessage(new URLSearchParams(window.location.search).get("auth_error"));
+}
+
 export default function HomeWorkspaces() {
   const router = useRouter();
   const [boards, setBoards] = useState<HomeBoard[]>([]);
@@ -79,7 +94,7 @@ export default function HomeWorkspaces() {
   const [deletingBoard, setDeletingBoard] = useState<HomeBoard | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(getInitialAuthError);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
@@ -162,10 +177,10 @@ export default function HomeWorkspaces() {
     if (!response.ok) {
       clearAuthToken();
       setCurrentUser(null);
-    setBoards([]);
-    setArchivedBoards([]);
-    setIsAuthChecked(true);
-    return;
+      setBoards([]);
+      setArchivedBoards([]);
+      setIsAuthChecked(true);
+      return;
     }
 
     const data = (await response.json()) as { user: AuthUser };
@@ -175,10 +190,26 @@ export default function HomeWorkspaces() {
   }, [loadArchivedBoards, loadBoards]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get("token");
+    const authError = params.get("auth_error");
+
+    if (oauthToken || authError) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    if (oauthToken) {
+      setAuthToken(oauthToken);
+    }
+
     // Restore an existing local JWT session on first client render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSession();
   }, [loadSession]);
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
+  };
 
   const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -186,7 +217,7 @@ export default function HomeWorkspaces() {
     setError("");
 
     try {
-      const response = await fetch(`http://127.0.0.1:5000/api/auth/${authMode}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/${authMode}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -367,8 +398,27 @@ export default function HomeWorkspaces() {
             Use a real account to manage boards with OWNER, ADMIN, and MEMBER permissions.
           </p>
 
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-xs font-bold text-blue-600">
+              G
+            </span>
+            Continue with Google
+          </button>
+
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              or
+            </span>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+
           {authMode === "register" && (
-            <label className="mt-5 block">
+            <label className="block">
               <span className="mb-1 block text-sm font-medium text-slate-700">Name</span>
               <input
                 value={authName}
