@@ -4,6 +4,7 @@ const path = require('path');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth.routes');
+const aiRoutes = require('./routes/ai.routes');
 const boardsRoutes = require('./routes/boards.routes');
 const columnsRoutes = require('./routes/columns.routes');
 const tasksRoutes = require('./routes/tasks.routes');
@@ -22,6 +23,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/ai', aiRoutes);
 app.use('/api/boards', boardsRoutes);
 app.use('/api/columns', columnsRoutes);
 app.use('/api/tasks', tasksRoutes);

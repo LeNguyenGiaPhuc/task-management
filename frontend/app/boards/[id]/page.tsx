@@ -237,6 +237,7 @@ function TaskDetailModal({
   onDelete,
   onDuplicate,
   onCreateSubTask,
+  onGenerateSubTasks,
   onToggleSubTask,
   onDeleteSubTask,
   onCreateComment,
@@ -253,6 +254,7 @@ function TaskDetailModal({
   onDelete: () => Promise<void>;
   onDuplicate: () => Promise<void>;
   onCreateSubTask: (title: string) => Promise<void>;
+  onGenerateSubTasks: () => Promise<void>;
   onToggleSubTask: (subTask: SubTask) => Promise<void>;
   onDeleteSubTask: (subTaskId: string) => Promise<void>;
   onCreateComment: (content: string) => Promise<void>;
@@ -273,6 +275,7 @@ function TaskDetailModal({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isAddingSubTask, setIsAddingSubTask] = useState(false);
+  const [isGeneratingSubTasks, setIsGeneratingSubTasks] = useState(false);
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [isAddingAttachment, setIsAddingAttachment] = useState(false);
 
@@ -308,6 +311,15 @@ function TaskDetailModal({
       setSubTaskTitle("");
     } finally {
       setIsAddingSubTask(false);
+    }
+  };
+
+  const handleGenerateSubTasks = async () => {
+    setIsGeneratingSubTasks(true);
+    try {
+      await onGenerateSubTasks();
+    } finally {
+      setIsGeneratingSubTasks(false);
     }
   };
 
@@ -482,11 +494,21 @@ function TaskDetailModal({
         </form>
 
         <section className="mt-6 border-t border-slate-200 pt-5">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h3 className="font-bold text-slate-950">Checklist</h3>
-            <span className="text-sm text-slate-500">
-              {completedCount}/{task.sub_tasks?.length || 0}
-            </span>
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="font-bold text-slate-950">Checklist</h3>
+              <p className="text-xs text-slate-500">
+                {completedCount}/{task.sub_tasks?.length || 0} completed
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleGenerateSubTasks}
+              disabled={isGeneratingSubTasks}
+              className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isGeneratingSubTasks ? "Generating..." : "Generate with AI"}
+            </button>
           </div>
 
           <div className="mb-3 grid gap-2">
@@ -1325,6 +1347,31 @@ export function BoardWorkspace({
 
     const subTask = (await res.json()) as SubTask;
     updateSubTasksInColumns(selectedTask.id, [...(selectedTask.sub_tasks || []), subTask]);
+    setError("");
+    await fetchBoardData();
+  };
+
+  const handleGenerateSubTasks = async () => {
+    if (!selectedTask) return;
+
+    setError("");
+
+    const res = await apiFetch(`/api/ai/tasks/${selectedTask.id}/subtasks`, {
+      method: "POST",
+    });
+
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      setError(data.error || "Could not generate checklist items with AI. Try again.");
+      return;
+    }
+
+    const generatedSubTasks = (await res.json()) as SubTask[];
+
+    updateSubTasksInColumns(selectedTask.id, [
+      ...(selectedTask.sub_tasks || []),
+      ...generatedSubTasks,
+    ]);
     setError("");
     await fetchBoardData();
   };
@@ -2424,6 +2471,7 @@ export function BoardWorkspace({
           onDelete={handleDeleteTask}
           onDuplicate={handleDuplicateTask}
           onCreateSubTask={handleCreateSubTask}
+          onGenerateSubTasks={handleGenerateSubTasks}
           onToggleSubTask={handleToggleSubTask}
           onDeleteSubTask={handleDeleteSubTask}
           onCreateComment={handleCreateComment}
