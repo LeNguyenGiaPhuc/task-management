@@ -89,6 +89,51 @@ type BoardData = {
   columns?: Column[];
 };
 
+type BoardAnalytics = {
+  generated_at: string;
+  summary: {
+    columns: number;
+    total_tasks: number;
+    open_tasks: number;
+    done_tasks: number;
+    completion_rate: number;
+    high_priority_tasks: number;
+    urgent_tasks: number;
+    overdue_tasks: number;
+    due_soon_tasks: number;
+    unassigned_tasks: number;
+    checklist_completion_rate: number;
+    health_status: "NEEDS_ATTENTION" | "HIGH_PRIORITY" | "ON_TRACK";
+    health_label: string;
+  };
+  columns: Array<{
+    id: string;
+    title: string;
+    task_count: number;
+    percent: number;
+    is_done: boolean;
+  }>;
+  priorities: Array<{
+    label: Priority;
+    count: number;
+    percent: number;
+  }>;
+  task_types: Array<{
+    label: TaskType;
+    count: number;
+    percent: number;
+  }>;
+  member_workload: Array<{
+    user_id: string;
+    name: string;
+    project_role: string;
+    task_count: number;
+    urgent_count: number;
+    overdue_count: number;
+    workload_percent: number;
+  }>;
+};
+
 type CreatedColumn = Omit<Column, "tasks">;
 
 type TaskUpdate = {
@@ -700,6 +745,7 @@ export function BoardWorkspace({
   const [boardName, setBoardName] = useState("Loading...");
   const [boardDescription, setBoardDescription] = useState("");
   const [boardBackground, setBoardBackground] = useState("");
+  const [boardAnalytics, setBoardAnalytics] = useState<BoardAnalytics | null>(null);
   const [columns, setColumns] = useState<Column[]>([]);
   const [boardMembers, setBoardMembers] = useState<BoardMember[]>([]);
   const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
@@ -818,10 +864,47 @@ export function BoardWorkspace({
       (a, b) =>
         new Date(b.archived_at || 0).getTime() - new Date(a.archived_at || 0).getTime()
     );
+  const analyticsSummary = boardAnalytics?.summary;
+  const displayTotalTasks = analyticsSummary?.total_tasks ?? totalTasks;
+  const displayOpenTasks = analyticsSummary?.open_tasks ?? openTasks;
+  const displayDoneTasks = analyticsSummary?.done_tasks ?? doneTasks;
+  const displayCompletionRate = analyticsSummary?.completion_rate ?? completionRate;
+  const displayChecklistRate = analyticsSummary?.checklist_completion_rate ?? checklistRate;
+  const displayUrgentTasks = analyticsSummary?.urgent_tasks ?? urgentTasks;
+  const displayHighPriorityTasks = analyticsSummary?.high_priority_tasks ?? highPriorityTasks;
+  const displayOverdueTasks = analyticsSummary?.overdue_tasks ?? overdueTasks;
+  const displayDueSoonTasks = analyticsSummary?.due_soon_tasks ?? dueSoonTasks;
+  const displayUnassignedTasks = analyticsSummary?.unassigned_tasks ?? unassignedTasks;
+  const displayColumnReport = boardAnalytics?.columns.map((column) => ({
+    id: column.id,
+    title: column.title,
+    count: column.task_count,
+    percent: column.percent,
+  })) ?? columnReport;
+  const displayPriorityReport = boardAnalytics?.priorities ?? priorityReport.map((item) => ({
+    ...item,
+    percent: totalTasks ? Math.round((item.count / totalTasks) * 100) : 0,
+  }));
+  const displayTypeReport = boardAnalytics?.task_types ?? typeReport.map((item) => ({
+    ...item,
+    percent: totalTasks ? Math.round((item.count / totalTasks) * 100) : 0,
+  }));
+  const displayMemberReport = boardAnalytics?.member_workload.map((member) => ({
+    id: member.user_id,
+    name: member.name,
+    projectRole: member.project_role,
+    count: member.task_count,
+    urgentCount: member.urgent_count,
+    overdueCount: member.overdue_count,
+    percent: member.workload_percent,
+  })) ?? memberReport.map((member) => ({
+    ...member,
+    percent: totalTasks ? Math.round((member.count / totalTasks) * 100) : 0,
+  }));
   const boardHealth =
-    overdueTasks > 0
+    displayOverdueTasks > 0
       ? { label: "Needs attention", className: "bg-red-50 text-red-700 ring-red-200" }
-      : urgentTasks > 0
+      : displayUrgentTasks > 0
         ? { label: "High priority", className: "bg-amber-50 text-amber-700 ring-amber-200" }
         : { label: "On track", className: "bg-emerald-50 text-emerald-700 ring-emerald-200" };
   const visibleColumns = useMemo(() => {
@@ -881,10 +964,11 @@ export function BoardWorkspace({
   };
 
   const fetchBoardData = useCallback(async () => {
-    const [boardResponse, archivedTasksResponse, meResponse] = await Promise.all([
+    const [boardResponse, archivedTasksResponse, meResponse, analyticsResponse] = await Promise.all([
       apiFetch(`/api/boards/${id}`),
       apiFetch(`/api/tasks/archived?board_id=${encodeURIComponent(id)}`),
       apiFetch("/api/auth/me"),
+      apiFetch(`/api/analytics/boards/${id}`),
     ]);
 
     if (!boardResponse.ok || !archivedTasksResponse.ok || !meResponse.ok) {
@@ -894,10 +978,14 @@ export function BoardWorkspace({
     const boardData = (await boardResponse.json()) as BoardData;
     const archivedTaskData = (await archivedTasksResponse.json()) as Task[];
     const meData = (await meResponse.json()) as { user: AuthUser };
+    const analyticsData = analyticsResponse.ok
+      ? ((await analyticsResponse.json()) as BoardAnalytics)
+      : null;
 
     setBoardName(boardData.title);
     setBoardDescription(boardData.description || "");
     setBoardBackground(boardData.background || "");
+    setBoardAnalytics(analyticsData);
     setBoardMembers(boardData.board_members || []);
     setArchivedTasks(archivedTaskData.map(normalizeTask));
     setCurrentUser(meData.user);
@@ -1635,25 +1723,25 @@ export function BoardWorkspace({
   const summaryCards = [
     {
       label: "Open tasks",
-      value: openTasks,
-      detail: `${doneTasks} done`,
+      value: displayOpenTasks,
+      detail: `${displayDoneTasks} done`,
     },
     {
       label: "Completion",
-      value: `${completionRate}%`,
-      detail: `${checklistRate}% checklist progress`,
+      value: `${displayCompletionRate}%`,
+      detail: `${displayChecklistRate}% checklist progress`,
     },
     {
       label: "Due risk",
-      value: overdueTasks,
-      detail: `${dueSoonTasks} due soon`,
-      tone: overdueTasks > 0 ? "text-red-600" : "text-slate-900",
+      value: displayOverdueTasks,
+      detail: `${displayDueSoonTasks} due soon`,
+      tone: displayOverdueTasks > 0 ? "text-red-600" : "text-slate-900",
     },
     {
       label: "Priority load",
-      value: highPriorityTasks,
-      detail: `${urgentTasks} urgent / ${unassignedTasks} unassigned`,
-      tone: urgentTasks > 0 ? "text-amber-600" : "text-slate-900",
+      value: displayHighPriorityTasks,
+      detail: `${displayUrgentTasks} urgent / ${displayUnassignedTasks} unassigned`,
+      tone: displayUrgentTasks > 0 ? "text-amber-600" : "text-slate-900",
     },
   ];
 
@@ -1673,7 +1761,7 @@ export function BoardWorkspace({
                 <p className={`mt-0.5 max-w-2xl text-xs ${embedded ? "text-slate-600" : "text-slate-600"}`}>{boardDescription}</p>
               )}
               <p className={`mt-0.5 text-xs ${embedded ? "text-slate-500" : "text-slate-500"}`}>
-                {columns.length} columns / {totalTasks} tasks / {urgentTasks} urgent
+                {columns.length} columns / {displayTotalTasks} tasks / {displayUrgentTasks} urgent
               </p>
               <div className={`mt-1 inline-flex items-center gap-2 rounded-md px-2 py-0.5 text-xs font-semibold ${
                 embedded
@@ -2177,25 +2265,25 @@ export function BoardWorkspace({
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className={innerCardClass}>
                   <p className="text-xs font-medium text-slate-500">Total tasks</p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">{totalTasks}</p>
-                  <p className="mt-1 text-xs text-slate-500">{openTasks} open / {doneTasks} done</p>
+                  <p className="mt-2 text-2xl font-bold text-slate-900">{displayTotalTasks}</p>
+                  <p className="mt-1 text-xs text-slate-500">{displayOpenTasks} open / {displayDoneTasks} done</p>
                 </div>
                 <div className={innerCardClass}>
                   <p className="text-xs font-medium text-slate-500">Completion</p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">{completionRate}%</p>
-                  <p className="mt-1 text-xs text-slate-500">{checklistRate}% checklist progress</p>
+                  <p className="mt-2 text-2xl font-bold text-slate-900">{displayCompletionRate}%</p>
+                  <p className="mt-1 text-xs text-slate-500">{displayChecklistRate}% checklist progress</p>
                 </div>
                 <div className={innerCardClass}>
                   <p className="text-xs font-medium text-slate-500">Risk</p>
-                  <p className={`mt-2 text-2xl font-bold ${overdueTasks > 0 ? "text-red-600" : "text-slate-900"}`}>
-                    {overdueTasks}
+                  <p className={`mt-2 text-2xl font-bold ${displayOverdueTasks > 0 ? "text-red-600" : "text-slate-900"}`}>
+                    {displayOverdueTasks}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">{dueSoonTasks} due soon</p>
+                  <p className="mt-1 text-xs text-slate-500">{displayDueSoonTasks} due soon</p>
                 </div>
               </div>
 
               <div className="mt-4 grid gap-3">
-                {columnReport.map((column) => (
+                {displayColumnReport.map((column) => (
                   <div key={column.id}>
                     <div className="mb-1 flex items-center justify-between gap-3 text-xs">
                       <span className="font-semibold uppercase tracking-wide text-slate-600">
@@ -2222,9 +2310,8 @@ export function BoardWorkspace({
                 Assigned work and risk by member.
               </p>
               <div className="grid gap-2">
-                {memberReport.length > 0 ? (
-                  memberReport.map((member) => {
-                    const percent = totalTasks ? Math.round((member.count / totalTasks) * 100) : 0;
+                {displayMemberReport.length > 0 ? (
+                  displayMemberReport.map((member) => {
                     return (
                       <div key={member.id} className="rounded-md border border-slate-200 bg-slate-50 p-3">
                         <div className="flex items-start justify-between gap-3">
@@ -2235,7 +2322,7 @@ export function BoardWorkspace({
                           <p className="shrink-0 text-sm font-bold text-slate-900">{member.count}</p>
                         </div>
                         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                          <div className="h-full rounded-full bg-slate-700" style={{ width: `${percent}%` }} />
+                          <div className="h-full rounded-full bg-slate-700" style={{ width: `${member.percent}%` }} />
                         </div>
                         <p className="mt-2 text-xs text-slate-500">
                           {member.urgentCount} urgent / {member.overdueCount} overdue
@@ -2256,8 +2343,7 @@ export function BoardWorkspace({
             <section className={reportPanelClass}>
               <h2 className="text-base font-bold text-slate-900">Priority breakdown</h2>
               <div className="mt-4 grid gap-3">
-                {priorityReport.map((item) => {
-                  const percent = totalTasks ? Math.round((item.count / totalTasks) * 100) : 0;
+                {displayPriorityReport.map((item) => {
                   return (
                     <div key={item.label}>
                       <div className="mb-1 flex items-center justify-between gap-3 text-xs">
@@ -2267,7 +2353,7 @@ export function BoardWorkspace({
                         <span className="text-slate-500">{item.count} tasks</span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                        <div className="h-full rounded-full bg-slate-700" style={{ width: `${percent}%` }} />
+                        <div className="h-full rounded-full bg-slate-700" style={{ width: `${item.percent}%` }} />
                       </div>
                     </div>
                   );
@@ -2278,8 +2364,7 @@ export function BoardWorkspace({
             <section className={reportPanelClass}>
               <h2 className="text-base font-bold text-slate-900">Type breakdown</h2>
               <div className="mt-4 grid gap-3">
-                {typeReport.map((item) => {
-                  const percent = totalTasks ? Math.round((item.count / totalTasks) * 100) : 0;
+                {displayTypeReport.map((item) => {
                   return (
                     <div key={item.label}>
                       <div className="mb-1 flex items-center justify-between gap-3 text-xs">
@@ -2289,7 +2374,7 @@ export function BoardWorkspace({
                         <span className="text-slate-500">{item.count} tasks</span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                        <div className="h-full rounded-full bg-blue-600" style={{ width: `${percent}%` }} />
+                        <div className="h-full rounded-full bg-blue-600" style={{ width: `${item.percent}%` }} />
                       </div>
                     </div>
                   );

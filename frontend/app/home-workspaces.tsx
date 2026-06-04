@@ -22,6 +22,23 @@ export type HomeBoard = {
   columns?: BoardColumnSummary[];
 };
 
+type WorkspaceAnalytics = {
+  generated_at: string;
+  summary: {
+    boards: number;
+    columns: number;
+    total_tasks: number;
+    open_tasks: number;
+    done_tasks: number;
+    urgent_tasks: number;
+    overdue_tasks: number;
+    due_soon_tasks: number;
+    unassigned_tasks: number;
+    completion_rate: number;
+    checklist_completion_rate: number;
+  };
+};
+
 type SortMode = "recent" | "updated" | "az" | "za";
 type AuthMode = "login" | "register";
 type SidebarItem = "Spaces";
@@ -81,6 +98,7 @@ export default function HomeWorkspaces() {
   const router = useRouter();
   const [boards, setBoards] = useState<HomeBoard[]>([]);
   const [archivedBoards, setArchivedBoards] = useState<HomeBoard[]>([]);
+  const [workspaceAnalytics, setWorkspaceAnalytics] = useState<WorkspaceAnalytics | null>(null);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
@@ -134,6 +152,10 @@ export default function HomeWorkspaces() {
     (total, board) => total + (board.columns?.length || 0),
     0
   );
+  const workspaceSummary = workspaceAnalytics?.summary;
+  const displayWorkspaceBoards = workspaceSummary?.boards ?? boards.length;
+  const displayWorkspaceColumns = workspaceSummary?.columns ?? totalColumns;
+  const displayWorkspaceTasks = workspaceSummary?.total_tasks ?? totalTasks;
   const selectedBoard = useMemo(
     () => boards.find((board) => board.id === selectedBoardId) || null,
     [boards, selectedBoardId]
@@ -171,6 +193,24 @@ export default function HomeWorkspaces() {
     setArchivedBoards(boardData);
   }, []);
 
+  const loadWorkspaceAnalytics = useCallback(async () => {
+    const response = await apiFetch("/api/analytics/workspace");
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearAuthToken();
+        setCurrentUser(null);
+        setWorkspaceAnalytics(null);
+        return;
+      }
+      setWorkspaceAnalytics(null);
+      return;
+    }
+
+    const data = (await response.json()) as WorkspaceAnalytics;
+    setWorkspaceAnalytics(data);
+  }, []);
+
   const loadSession = useCallback(async () => {
     const response = await apiFetch("/api/auth/me");
 
@@ -179,15 +219,16 @@ export default function HomeWorkspaces() {
       setCurrentUser(null);
       setBoards([]);
       setArchivedBoards([]);
+      setWorkspaceAnalytics(null);
       setIsAuthChecked(true);
       return;
     }
 
     const data = (await response.json()) as { user: AuthUser };
     setCurrentUser(data.user);
-    await Promise.all([loadBoards(), loadArchivedBoards()]);
+    await Promise.all([loadBoards(), loadArchivedBoards(), loadWorkspaceAnalytics()]);
     setIsAuthChecked(true);
-  }, [loadArchivedBoards, loadBoards]);
+  }, [loadArchivedBoards, loadBoards, loadWorkspaceAnalytics]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -236,7 +277,7 @@ export default function HomeWorkspaces() {
       setAuthToken(data.token);
       setCurrentUser(data.user);
       setAuthPassword("");
-      await Promise.all([loadBoards(), loadArchivedBoards()]);
+      await Promise.all([loadBoards(), loadArchivedBoards(), loadWorkspaceAnalytics()]);
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Could not authenticate.");
     } finally {
@@ -250,6 +291,7 @@ export default function HomeWorkspaces() {
     setCurrentUser(null);
     setBoards([]);
     setArchivedBoards([]);
+    setWorkspaceAnalytics(null);
     router.push("/");
   };
 
@@ -314,6 +356,7 @@ export default function HomeWorkspaces() {
 
       const duplicatedBoard = (await response.json()) as HomeBoard;
       setBoards((currentBoards) => [duplicatedBoard, ...currentBoards]);
+      await loadWorkspaceAnalytics();
     } catch {
       setError("Khong nhan ban duoc board. Kiem tra backend roi thu lai.");
     } finally {
@@ -345,6 +388,7 @@ export default function HomeWorkspaces() {
         setSelectedBoardId(null);
       }
       setDeletingBoard(null);
+      await loadWorkspaceAnalytics();
     } catch {
       setError("Khong archive duoc board. Kiem tra backend roi thu lai.");
     } finally {
@@ -363,7 +407,7 @@ export default function HomeWorkspaces() {
 
       if (!response.ok) throw new Error("Restore board failed");
 
-      await Promise.all([loadBoards(), loadArchivedBoards()]);
+      await Promise.all([loadBoards(), loadArchivedBoards(), loadWorkspaceAnalytics()]);
     } catch {
       setError("Khong khoi phuc duoc board. Kiem tra backend roi thu lai.");
     } finally {
@@ -614,7 +658,7 @@ export default function HomeWorkspaces() {
               <div className="flex flex-wrap items-center gap-2">
                 <CreateBoardButton
                   onCreated={async (board) => {
-                    await loadBoards();
+                    await Promise.all([loadBoards(), loadWorkspaceAnalytics()]);
                     setActiveSidebarItem("Spaces");
                     setIsSpacesOpen(true);
                     setSelectedBoardId(board.id);
@@ -658,7 +702,7 @@ export default function HomeWorkspaces() {
                     <h1 className="text-2xl font-bold text-slate-900">Task Management Workspace</h1>
                   </div>
                   <p className="mt-2 text-sm text-slate-500">
-                    {boards.length} boards / {totalColumns} columns / {totalTasks} tasks
+                    {displayWorkspaceBoards} boards / {displayWorkspaceColumns} columns / {displayWorkspaceTasks} tasks
                   </p>
                 </div>
                 <select
