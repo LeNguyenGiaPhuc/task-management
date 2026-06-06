@@ -785,6 +785,22 @@ export function BoardWorkspace({
     () => false
   );
 
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("task-manager:active-board-changed", {
+        detail: { boardId: id },
+      })
+    );
+
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("task-manager:active-board-changed", {
+          detail: { boardId: "" },
+        })
+      );
+    };
+  }, [id]);
+
   const selectedTask =
     columns.flatMap((column) => column.tasks).find((task) => task.id === selectedTaskId) || null;
   const currentMember = boardMembers.find((member) => member.user_id === currentUser?.id);
@@ -1009,6 +1025,20 @@ export function BoardWorkspace({
 
     return () => {
       isActive = false;
+    };
+  }, [fetchBoardData]);
+
+  useEffect(() => {
+    const refreshAfterAiAction = () => {
+      fetchBoardData().catch(() => {
+        setError("Could not refresh board after AI action.");
+      });
+    };
+
+    window.addEventListener("task-manager:ai-actions-applied", refreshAfterAiAction);
+
+    return () => {
+      window.removeEventListener("task-manager:ai-actions-applied", refreshAfterAiAction);
     };
   }, [fetchBoardData]);
 

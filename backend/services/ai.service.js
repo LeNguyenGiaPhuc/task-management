@@ -116,7 +116,72 @@ ${message}
 `;
 }
 
-async function requestGeminiText({ prompt, temperature = 0.25, maxOutputTokens = 1400 }) {
+function buildActionPrompt({ message, context, history }) {
+  const recentHistory = history
+    .slice(-8)
+    .map((item) => `${item.role === 'assistant' ? 'Assistant' : 'User'}: ${item.content}`)
+    .join('\n');
+
+  return `
+You are Task Manager Copilot inside a Jira-like Kanban app.
+Answer in Vietnamese unless the user clearly asks for English.
+
+Your job is to return a JSON object with:
+- reply: a concise user-facing answer.
+- actions: proposed database actions that require user confirmation before execution.
+
+Supported action types:
+1. CREATE_TASK
+Payload:
+{
+  "board_id": "uuid from context",
+  "column_id": "uuid from context",
+  "title": "required, max 120 chars",
+  "description": "optional",
+  "task_type": "TASK|BUG|STORY|EPIC",
+  "priority": "LOW|MEDIUM|HIGH|URGENT",
+  "due_date": "YYYY-MM-DD or null"
+}
+
+2. CREATE_SUBTASKS
+Payload:
+{
+  "task_id": "uuid from context",
+  "titles": ["2 to 8 actionable checklist item titles"]
+}
+
+Rules:
+- Only include actions if the user clearly asks you to create/add/generate tasks or checklist items.
+- Never propose delete/archive/update actions.
+- Never invent board_id, column_id, or task_id. Use IDs from the context JSON only.
+- If the target board/column/task is ambiguous, actions must be [] and reply must ask for the missing target.
+- Prefer the selected_board when available.
+- For CREATE_TASK, choose the most suitable existing column. Prefer Backlog/To Do when available.
+- For CREATE_SUBTASKS, find the best matching task by title or description.
+- Keep actions small: at most 5 CREATE_TASK actions and at most 1 CREATE_SUBTASKS action.
+- Do not say the database was changed. Say the actions are ready for confirmation.
+- Return valid JSON only.
+
+Today is ${context.current_date || 'unknown'}.
+
+Project context JSON:
+${JSON.stringify(context, null, 2)}
+
+Recent conversation:
+${recentHistory || 'None'}
+
+User message:
+${message}
+`;
+}
+
+async function requestGeminiText({
+  prompt,
+  temperature = 0.25,
+  maxOutputTokens = 1400,
+  responseMimeType,
+  responseSchema,
+}) {
   const { apiKey, model } = getGeminiConfig();
 
   if (!apiKey) {
@@ -140,6 +205,8 @@ async function requestGeminiText({ prompt, temperature = 0.25, maxOutputTokens =
         generationConfig: {
           temperature,
           maxOutputTokens,
+          ...(responseMimeType ? { responseMimeType } : {}),
+          ...(responseSchema ? { responseSchema } : {}),
         },
       }),
     }
@@ -162,12 +229,117 @@ async function requestGeminiText({ prompt, temperature = 0.25, maxOutputTokens =
   return text;
 }
 
+function normalizeAiAction(action) {
+  if (!action || typeof action !== 'object') return null;
+  const type = String(action.type || '').trim().toUpperCase();
+  const payload = action.payload && typeof action.payload === 'object' ? action.payload : {};
+
+  if (type === 'CREATE_TASK') {
+    const title = cleanGeneratedTitle(payload.title);
+    const boardId = typeof payload.board_id === 'string' ? payload.board_id : '';
+    const columnId = typeof payload.column_id === 'string' ? payload.column_id : '';
+
+    if (!title || !boardId || !columnId) return null;
+
+    return {
+      type,
+      label: title,
+      payload: {
+        board_id: boardId,
+        column_id: columnId,
+        title,
+        description: typeof payload.description === 'string' ? payload.description.trim().slice(0, 2000) : null,
+        task_type: ['TASK', 'BUG', 'STORY', 'EPIC'].includes(payload.task_type) ? payload.task_type : 'TASK',
+        priority: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'].includes(payload.priority) ? payload.priority : 'MEDIUM',
+        due_date: typeof payload.due_date === 'string' && payload.due_date.trim() ? payload.due_date.trim() : null,
+      },
+    };
+  }
+
+  if (type === 'CREATE_SUBTASKS') {
+    const taskId = typeof payload.task_id === 'string' ? payload.task_id : '';
+    const titles = Array.isArray(payload.titles)
+      ? payload.titles.map(cleanGeneratedTitle).filter(Boolean)
+      : [];
+    const uniqueTitles = [...new Set(titles.map((title) => title.slice(0, 255)))].slice(0, 8);
+
+    if (!taskId || !uniqueTitles.length) return null;
+
+    return {
+      type,
+      label: `Create ${uniqueTitles.length} checklist items`,
+      payload: {
+        task_id: taskId,
+        titles: uniqueTitles,
+      },
+    };
+  }
+
+  return null;
+}
+
 async function generateChatReply({ message, context, history = [] }) {
   return requestGeminiText({
     prompt: buildChatPrompt({ message, context, history }),
     temperature: 0.3,
     maxOutputTokens: 1600,
   });
+}
+
+async function generateChatActionProposal({ message, context, history = [] }) {
+  const text = await requestGeminiText({
+    prompt: buildActionPrompt({ message, context, history }),
+    temperature: 0.2,
+    maxOutputTokens: 1800,
+    responseMimeType: 'application/json',
+    responseSchema: {
+      type: 'OBJECT',
+      properties: {
+        reply: { type: 'STRING' },
+        actions: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              type: { type: 'STRING' },
+              label: { type: 'STRING' },
+              payload: {
+                type: 'OBJECT',
+                properties: {
+                  board_id: { type: 'STRING' },
+                  column_id: { type: 'STRING' },
+                  task_id: { type: 'STRING' },
+                  title: { type: 'STRING' },
+                  description: { type: 'STRING' },
+                  task_type: { type: 'STRING' },
+                  priority: { type: 'STRING' },
+                  due_date: { type: 'STRING' },
+                  titles: {
+                    type: 'ARRAY',
+                    items: { type: 'STRING' },
+                  },
+                },
+              },
+            },
+            required: ['type', 'payload'],
+          },
+        },
+      },
+      required: ['reply', 'actions'],
+    },
+  });
+  const parsed = parseJsonObject(text);
+  const reply = typeof parsed.reply === 'string' && parsed.reply.trim()
+    ? parsed.reply.trim()
+    : 'Mình đã chuẩn bị đề xuất hành động.';
+  const actions = Array.isArray(parsed.actions)
+    ? parsed.actions.map(normalizeAiAction).filter(Boolean)
+    : [];
+
+  return {
+    reply,
+    actions,
+  };
 }
 
 async function generateSubTaskTitles({ task, existingSubTasks = [] }) {
@@ -251,6 +423,7 @@ async function generateSubTaskTitles({ task, existingSubTasks = [] }) {
 }
 
 module.exports = {
+  generateChatActionProposal,
   generateChatReply,
   generateSubTaskTitles,
 };

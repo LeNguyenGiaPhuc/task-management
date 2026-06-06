@@ -1,74 +1,108 @@
-# Task Management - Jira/Kanban Like
+# Task Manager
 
-A task management application based on the Kanban model, inspired by Jira/Trello. The project is built with a separated frontend and backend architecture, uses a PostgreSQL database, provides REST APIs, supports workspace/board management, task drag and drop, checklists, and includes sample data for demonstration.
+A full-stack Jira-style task management application built with Next.js, Express.js, Prisma, and PostgreSQL. The system supports workspace management, Kanban boards, role-based access control, Google OAuth login, task collaboration, analytics dashboards, file attachments, and an AI assistant that can propose and execute task-related actions after user confirmation.
 
-## Project Goals
+This project is designed as a practical full-stack product for learning and internship portfolio purposes, with a stronger focus on backend architecture, REST APIs, authorization, database modeling, and real application workflows.
 
-This project was developed to simulate a real-world task management system at a mini-product level:
+## Key Features
 
-- Manage multiple workspaces/boards.
-- Manage columns based on work status.
-- Manage tasks with priority, due date, description, and checklist.
-- Drag and drop tasks between columns and persist their order in the database.
-- Design a database foundation for RBAC, activity logs, and attachments.
-- Provide a clean and professional web interface suitable for a work management dashboard.
+### Authentication and Access Control
 
-## Demo Features
+- Email/password login and registration.
+- Google OAuth login.
+- JWT-based authentication.
+- Board-level RBAC with:
+  - `OWNER`
+  - `ADMIN`
+  - `MEMBER`
+- Permission checks on board, column, task, member, archive, restore, and AI action APIs.
+- Real users are used instead of only demo users.
 
-### Workspace / Home
+### Workspace and Board Management
 
-- View the list of boards.
-- Create a new board.
+- View all accessible workspaces.
+- Create new boards.
 - Edit board name and description.
-- Delete a board.
-- Duplicate a board, including columns, tasks, and checklists.
-- Search boards by name or description.
-- Sort boards by:
-  - newest first,
-  - recently updated,
-  - A-Z,
-  - Z-A.
-- Display statistics for the number of boards, columns, and tasks.
+- Duplicate boards with columns, tasks, and checklists.
+- Archive boards instead of permanently deleting them.
+- Restore archived boards.
+- Search and sort boards.
+- Sidebar workspace navigation.
+- Embedded board detail view inside the workspace layout.
 
-### Board Detail
+### Kanban Board
 
-- Navigate back to the Workspaces page.
-- View the list of columns in a board.
-- Create a new column.
-- Rename a column.
-- Delete a column.
-- Create tasks inside each column.
+- Create, rename, reorder, and delete columns.
+- Create tasks inside columns.
 - Drag and drop tasks between columns.
-- Persist task positions using the `order` field in the database.
+- Persist task order in the database.
 - Search tasks.
-- Filter tasks by priority.
-- Disable drag and drop while filtering/searching to avoid incorrect ordering.
+- Filter tasks by:
+  - priority
+  - assignee
+  - due-date status
+- Disable drag and drop while filtering to avoid invalid ordering.
 
-### Task Detail
+### Task Management
 
-- Click a task to open its detail modal.
-- Edit:
-  - title,
-  - description,
-  - priority,
-  - due date.
-- Delete a task.
-- Duplicate a task.
-- Add checklist/subtasks.
-- Mark checklist items as completed.
-- Delete checklist items.
-- Show checklist progress on the task card.
+- Task detail modal.
+- Edit task title, description, type, priority, assignee, and due date.
+- Supported task types:
+  - `TASK`
+  - `BUG`
+  - `STORY`
+  - `EPIC`
+- Archive and restore tasks.
+- Checklist/subtask management.
+- Checklist completion tracking.
+- Task comments.
+- File attachments using local upload storage.
+- Task activity logging.
 
-### Database-Ready Features
+### Team and Role Management
 
-The database is already prepared for future expansion:
+- Add members to a board.
+- Assign board role and project role.
+- Edit member roles.
+- Remove members from a board.
+- Display member workload and project roles.
 
-- User management.
-- Board members.
-- RBAC with `OWNER`, `ADMIN`, and `MEMBER` roles.
-- Activity logs.
-- Task attachments.
-- Task assignees.
+### Dashboard and Analytics
+
+- Workspace-level analytics API.
+- Board-level analytics API.
+- Board health status:
+  - on track
+  - high priority
+  - needs attention
+- Summary metrics:
+  - open tasks
+  - completed tasks
+  - completion rate
+  - checklist completion rate
+  - overdue tasks
+  - due-soon tasks
+  - urgent tasks
+  - unassigned tasks
+- Breakdown by:
+  - column
+  - priority
+  - task type
+  - member workload
+
+### AI Assistant
+
+- Floating AI assistant available across the application.
+- Uses workspace or current board context.
+- Can analyze board health, bottlenecks, priorities, overdue work, and workload.
+- Can suggest next tasks and implementation checklists.
+- AI action mode:
+  - AI proposes actions.
+  - User must confirm before database changes are applied.
+  - Backend validates permissions again before executing.
+- Supported AI actions:
+  - create tasks
+  - create checklist items/subtasks
 
 ## Tech Stack
 
@@ -79,7 +113,7 @@ The database is already prepared for future expansion:
 - TypeScript
 - Tailwind CSS v4
 - App Router
-- `@hello-pangea/dnd` for Kanban drag and drop
+- `@hello-pangea/dnd` for drag and drop
 
 ### Backend
 
@@ -89,43 +123,79 @@ The database is already prepared for future expansion:
 - PostgreSQL
 - `pg`
 - `@prisma/adapter-pg`
-- `dotenv`
+- `jsonwebtoken`
+- `bcryptjs`
+- `multer`
 - `cors`
+- `dotenv`
 
 ### Database
 
 - PostgreSQL
+- Supabase-compatible PostgreSQL setup
 - UUID primary keys
-- Enums for priority and board role
-- Indexes for important queries
-- Trigger to automatically update `updated_at`
+- Enum types for board role and task priority
+- Indexed board, column, task, checklist, and activity-log queries
+- Trigger-based `updated_at` updates
+
+### AI Integration
+
+- Gemini API
+- Configurable model through environment variables
+- Default model: `gemini-2.5-flash`
 
 ## Folder Structure
 
 ```txt
 Task-Manager/
 ├── backend/
+│   ├── lib/
+│   │   └── prisma.js
+│   ├── middleware/
+│   │   └── auth.middleware.js
 │   ├── prisma/
 │   │   └── schema.prisma
-│   ├── server.js
+│   ├── routes/
+│   │   ├── ai.routes.js
+│   │   ├── analytics.routes.js
+│   │   ├── auth.routes.js
+│   │   ├── boards.routes.js
+│   │   ├── columns.routes.js
+│   │   ├── subtasks.routes.js
+│   │   ├── tasks.routes.js
+│   │   └── users.routes.js
+│   ├── services/
+│   │   ├── activity.service.js
+│   │   ├── ai.service.js
+│   │   ├── analytics.service.js
+│   │   ├── auth.service.js
+│   │   ├── comments.service.js
+│   │   └── users.service.js
+│   ├── utils/
+│   │   └── text.js
 │   ├── seed.js
-│   ├── package.json
-│   └── .env
+│   ├── server.js
+│   └── package.json
 │
 ├── frontend/
 │   ├── app/
 │   │   ├── boards/
 │   │   │   └── [id]/
 │   │   │       └── page.tsx
+│   │   ├── ai-chat-widget.tsx
+│   │   ├── api.ts
 │   │   ├── create-board-button.tsx
-│   │   ├── home-workspaces.tsx
 │   │   ├── globals.css
+│   │   ├── home-workspaces.tsx
 │   │   ├── layout.tsx
 │   │   └── page.tsx
+│   ├── public/
+│   ├── next.config.ts
 │   ├── package.json
 │   └── postcss.config.mjs
 │
-└── README.md
+├── README.md
+└── .gitignore
 ```
 
 ## Database Design
@@ -134,37 +204,42 @@ Main tables:
 
 | Table | Purpose |
 | --- | --- |
-| `users` | Stores user information |
+| `users` | Stores user accounts, password auth data, Google OAuth data, and profile info |
 | `boards` | Stores workspaces/boards |
-| `board_members` | Many-to-many relationship between users and boards, with roles |
-| `columns` | Status columns inside a board |
-| `tasks` | Task cards |
-| `sub_tasks` | Task checklists/subtasks |
-| `task_attachments` | Files/links attached to tasks |
-| `activity_logs` | Activity history inside a board |
+| `board_members` | Stores board membership, board role, and project role |
+| `columns` | Stores Kanban columns/lists |
+| `tasks` | Stores task cards |
+| `sub_tasks` | Stores task checklists/subtasks |
+| `task_attachments` | Stores uploaded task attachments |
+| `activity_logs` | Stores board activity history |
 
-Enums:
+Main enums:
 
 ```sql
 task_priority = LOW | MEDIUM | HIGH | URGENT
 board_role = OWNER | ADMIN | MEMBER
 ```
 
+Additional runtime-managed columns used by the application:
+
+- `users.password_hash`
+- `users.google_id`
+- `users.auth_provider`
+- `boards.archived_at`
+- `tasks.task_type`
+- `tasks.archived_at`
+- `board_members.project_role`
+
 ## Environment Requirements
 
 Required tools:
 
-- Node.js
+- Node.js 20+
 - npm
-- PostgreSQL
+- PostgreSQL or Supabase PostgreSQL
 - Git
 
-Recommended versions:
-
-- Node.js 20+
-- PostgreSQL 15+
-
-## Project Setup
+## Setup
 
 Clone the repository:
 
@@ -187,91 +262,140 @@ cd ../frontend
 npm install
 ```
 
-## Environment Configuration
+## Environment Variables
 
-Create a `.env` file inside the `backend` folder:
+Create `backend/.env`.
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 PORT=5000
+
+FRONTEND_URL="http://localhost:3000"
+
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+GOOGLE_CALLBACK_URL="http://localhost:5000/api/auth/google/callback"
+
+GEMINI_API_KEY="your-gemini-api-key"
+GEMINI_MODEL="gemini-2.5-flash"
 ```
 
-Local example:
+Do not commit the `.env` file. It contains private credentials.
 
-```env
-DATABASE_URL="postgresql://postgres:your_password@localhost:5432/task_manager"
-PORT=5000
+For Google OAuth local development, configure this redirect URI in Google Cloud:
+
+```txt
+http://localhost:5000/api/auth/google/callback
 ```
 
-If PostgreSQL uses `gen_random_uuid()` for UUID generation, enable this extension:
+If PostgreSQL uses `gen_random_uuid()`, enable the extension:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ```
 
-## Running the Project
+## Prisma
 
-### 1. Run the Backend
-
-Inside the `backend` folder:
+Generate Prisma Client:
 
 ```bash
+cd backend
+npx prisma generate
+```
+
+Validate Prisma schema:
+
+```bash
+npx prisma validate
+```
+
+Execute a one-off SQL patch if needed:
+
+```bash
+echo "ALTER TABLE board_members ADD COLUMN IF NOT EXISTS project_role VARCHAR(255);" | npx prisma db execute --stdin
+```
+
+## Running the Project
+
+Run the backend:
+
+```bash
+cd backend
 node server.js
 ```
 
-The backend runs at:
+Backend URL:
 
 ```txt
 http://localhost:5000
 ```
 
-### 2. Run the Frontend
-
-Inside the `frontend` folder:
+Run the frontend:
 
 ```bash
+cd frontend
 npm run dev
 ```
 
-The frontend runs at:
+Frontend URL:
 
 ```txt
 http://localhost:3000
 ```
 
-## Seed Sample Data
+The frontend dev script uses Webpack:
 
-The project includes a script for quickly creating demo data:
+```json
+"dev": "next dev --webpack"
+```
+
+This avoids heavy Turbopack behavior on some local Windows machines.
+
+## Seed Data
+
+Run the seed script:
 
 ```bash
 cd backend
 npm run seed
 ```
 
-The seed script creates:
+The seed script creates demo users, boards, columns, tasks, subtasks, attachments, and activity logs.
 
-- Demo users.
-- `Jira Clone Roadmap` board.
-- `Product Launch Plan` board.
-- Sample columns.
-- Tasks with multiple priorities and due dates.
-- Checklists/subtasks.
-- Sample attachment.
-- Sample activity logs.
+Default seed accounts:
 
-The script is designed to be idempotent, so it can be run multiple times without creating large amounts of duplicate core data.
+| Role | Email | Password |
+| --- | --- | --- |
+| OWNER | `demo@task-manager.local` | `password123` |
+| ADMIN | `designer@task-manager.local` | `password123` |
+| MEMBER | `engineer@task-manager.local` | `password123` |
 
-## Main APIs
+## Main API Routes
+
+### Authentication
+
+```txt
+POST   /api/auth/register
+POST   /api/auth/login
+GET    /api/auth/me
+GET    /api/auth/google
+GET    /api/auth/google/callback
+```
 
 ### Boards
 
 ```txt
 GET    /api/boards
+GET    /api/boards/archived
 POST   /api/boards
 GET    /api/boards/:id
 PUT    /api/boards/:id
 DELETE /api/boards/:id
 POST   /api/boards/:id/duplicate
+POST   /api/boards/:id/restore
+POST   /api/boards/:id/members
+PUT    /api/boards/:id/members/:userId
+DELETE /api/boards/:id/members/:userId
 ```
 
 ### Columns
@@ -286,9 +410,17 @@ DELETE /api/columns/:id
 
 ```txt
 GET    /api/tasks
+GET    /api/tasks/archived
 POST   /api/tasks
 PUT    /api/tasks/:id
 DELETE /api/tasks/:id
+POST   /api/tasks/:id/restore
+GET    /api/tasks/:id/comments
+POST   /api/tasks/:id/comments
+DELETE /api/tasks/:taskId/comments/:commentId
+GET    /api/tasks/:id/attachments
+POST   /api/tasks/:id/attachments
+DELETE /api/tasks/:taskId/attachments/:attachmentId
 ```
 
 ### Subtasks
@@ -299,7 +431,45 @@ PUT    /api/subtasks/:id
 DELETE /api/subtasks/:id
 ```
 
-## Build and Validation
+### Analytics
+
+```txt
+GET    /api/analytics/workspace
+GET    /api/analytics/boards/:id
+```
+
+### AI
+
+```txt
+POST   /api/ai/chat
+POST   /api/ai/actions/apply
+POST   /api/ai/tasks/:taskId/subtasks
+```
+
+## AI Action Mode
+
+The AI assistant can propose database actions, but it does not directly mutate data during chat.
+
+Workflow:
+
+1. User asks the AI to create tasks or checklist items.
+2. AI returns a normal reply plus structured pending actions.
+3. Frontend displays the pending actions.
+4. User clicks `Apply actions`.
+5. Backend validates the action target and RBAC permission.
+6. Backend writes to the database and logs activity.
+7. Board UI refreshes automatically.
+
+Supported action types:
+
+```txt
+CREATE_TASK
+CREATE_SUBTASKS
+```
+
+This design keeps AI useful while avoiding uncontrolled database writes.
+
+## Validation and Checks
 
 Frontend lint:
 
@@ -308,10 +478,11 @@ cd frontend
 npm run lint
 ```
 
-Frontend production build:
+Frontend TypeScript check:
 
 ```bash
-npm run build
+cd frontend
+npm exec tsc -- --noEmit
 ```
 
 Backend syntax check:
@@ -319,21 +490,33 @@ Backend syntax check:
 ```bash
 cd backend
 node --check server.js
-node --check seed.js
+node --check routes/ai.routes.js
+node --check services/ai.service.js
 ```
 
 ## Technical Highlights
 
-- Clear separation between frontend and backend.
-- REST API built with Express.
+- Separated frontend and backend architecture.
+- REST API design with authentication middleware.
+- JWT authentication and Google OAuth integration.
+- Board-level RBAC enforced on backend routes.
 - Prisma ORM connected to PostgreSQL.
-- Kanban drag and drop with persistent ordering.
-- Uses a floating-point `order` field to optimize drag-and-drop reordering.
-- Database indexes for board/column/task ordering.
-- Schema foundation for RBAC.
-- Neutral dashboard-style UI suitable for work management applications.
-- Seed data for quick project demonstration.
+- Kanban drag and drop with persisted ordering.
+- Soft archive and restore for boards and tasks.
+- Activity logging for important board events.
+- File attachment upload flow with `multer`.
+- AI assistant with confirmation-based action execution.
+- Backend analytics APIs for dashboard metrics.
+- Seed data for quick demonstration.
+
+## Current Limitations and Future Improvements
+
+- File upload currently uses local storage. A production version should use Supabase Storage, S3, or another object storage service.
+- Test coverage is not implemented yet. Backend API tests with Supertest or Vitest would be a strong next step.
+- Notification and invitation systems are not implemented yet.
+- AI action mode currently supports task and checklist creation only.
+- Request validation can be improved with a schema validation library such as Zod or Joi.
 
 ## Author
 
-This project was built for learning, practicing full-stack development, and simulating the process of building a real-world task management application.
+This project was built for learning full-stack development and demonstrating a practical backend-oriented task management system for internship portfolio use.

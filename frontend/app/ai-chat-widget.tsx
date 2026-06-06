@@ -1,19 +1,50 @@
 "use client";
 
-import { FormEvent, ReactNode, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { apiFetch, getAuthToken } from "./api";
 
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  actions?: AiAction[];
+};
+
+type AiAction =
+  | {
+      type: "CREATE_TASK";
+      label: string;
+      payload: {
+        board_id: string;
+        column_id: string;
+        title: string;
+        description?: string | null;
+        task_type?: "TASK" | "BUG" | "STORY" | "EPIC";
+        priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+        due_date?: string | null;
+      };
+    }
+  | {
+      type: "CREATE_SUBTASKS";
+      label: string;
+      payload: {
+        task_id: string;
+        titles: string[];
+      };
+    };
+
+type AiActionResult = {
+  ok: boolean;
+  type: string;
+  message?: string;
+  error?: string;
 };
 
 const starterPrompts = [
   "Phan tich board hien tai giup tui",
   "Goi y task tiep theo nen lam",
-  "Tom tat tien do workspace",
-  "Tim task rui ro va cach xu ly",
+  "Tao 3 task tiep theo cho board nay",
+  "Chia task dang rui ro thanh checklist",
 ];
 
 function getBoardIdFromPath(pathname: string) {
@@ -86,9 +117,39 @@ function renderAssistantText(content: string) {
   return rendered;
 }
 
+function renderActionPreview(action: AiAction) {
+  if (action.type === "CREATE_TASK") {
+    return (
+      <div className="grid gap-1">
+        <p className="font-semibold text-slate-950">Create task: {action.payload.title}</p>
+        <p className="text-xs text-slate-500">
+          {action.payload.task_type || "TASK"} / {action.payload.priority || "MEDIUM"}
+          {action.payload.due_date ? ` / Due ${action.payload.due_date}` : ""}
+        </p>
+        {action.payload.description && (
+          <p className="line-clamp-2 text-xs text-slate-600">{action.payload.description}</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-1">
+      <p className="font-semibold text-slate-950">Create checklist items</p>
+      <ul className="grid gap-1 text-xs text-slate-600">
+        {action.payload.titles.slice(0, 5).map((title) => (
+          <li key={title}>- {title}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function AiChatWidget() {
   const pathname = usePathname();
-  const boardId = useMemo(() => getBoardIdFromPath(pathname || ""), [pathname]);
+  const boardIdFromPath = useMemo(() => getBoardIdFromPath(pathname || ""), [pathname]);
+  const [activeBoardId, setActiveBoardId] = useState("");
+  const boardId = boardIdFromPath || activeBoardId;
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -99,6 +160,20 @@ export default function AiChatWidget() {
     },
   ]);
   const [isSending, setIsSending] = useState(false);
+  const [applyingMessageIndex, setApplyingMessageIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleActiveBoardChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ boardId?: string }>;
+      setActiveBoardId(customEvent.detail?.boardId || "");
+    };
+
+    window.addEventListener("task-manager:active-board-changed", handleActiveBoardChange);
+
+    return () => {
+      window.removeEventListener("task-manager:active-board-changed", handleActiveBoardChange);
+    };
+  }, []);
 
   const sendMessage = async (content: string) => {
     const trimmedContent = content.trim();
@@ -140,10 +215,10 @@ export default function AiChatWidget() {
         throw new Error(data.error || "AI chat failed");
       }
 
-      const data = (await response.json()) as { reply: string };
+      const data = (await response.json()) as { reply: string; actions?: AiAction[] };
       setMessages((currentMessages) => [
         ...currentMessages,
-        { role: "assistant", content: data.reply },
+        { role: "assistant", content: data.reply, actions: data.actions || [] },
       ]);
     } catch (error) {
       setMessages((currentMessages) => [
@@ -164,6 +239,60 @@ export default function AiChatWidget() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     await sendMessage(message);
+  };
+
+  const applyActions = async (messageIndex: number, actions: AiAction[]) => {
+    if (!actions.length || applyingMessageIndex !== null) return;
+
+    setApplyingMessageIndex(messageIndex);
+
+    try {
+      const response = await apiFetch("/api/ai/actions/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actions }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || "Could not apply AI actions");
+      }
+
+      const data = (await response.json()) as { results: AiActionResult[] };
+      const okResults = data.results.filter((result) => result.ok);
+      const failedResults = data.results.filter((result) => !result.ok);
+      const resultLines = [
+        okResults.length ? `Da ap dung ${okResults.length} action:` : "",
+        ...okResults.map((result) => `- ${result.message || result.type}`),
+        failedResults.length ? `Khong ap dung duoc ${failedResults.length} action:` : "",
+        ...failedResults.map((result) => `- ${result.error || result.type}`),
+      ].filter(Boolean);
+
+      setMessages((currentMessages) => [
+        ...currentMessages.map((item, index) =>
+          index === messageIndex ? { ...item, actions: [] } : item
+        ),
+        {
+          role: "assistant",
+          content: resultLines.join("\n") || "Da ap dung AI actions.",
+        },
+      ]);
+
+      window.dispatchEvent(new CustomEvent("task-manager:ai-actions-applied"));
+    } catch (error) {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          role: "assistant",
+          content:
+            error instanceof Error
+              ? error.message
+              : "Khong ap dung duoc AI actions. Kiem tra backend roi thu lai.",
+        },
+      ]);
+    } finally {
+      setApplyingMessageIndex(null);
+    }
   };
 
   return (
@@ -221,6 +350,45 @@ export default function AiChatWidget() {
                       <p className="whitespace-pre-wrap">{item.content}</p>
                     )}
                   </div>
+                  {item.role === "assistant" && item.actions && item.actions.length > 0 && (
+                    <div className="mt-3 grid gap-2 border-t border-slate-200 pt-3">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                        Pending actions
+                      </p>
+                      {item.actions.map((action, actionIndex) => (
+                        <div
+                          key={`${action.type}-${actionIndex}`}
+                          className="rounded-md border border-blue-100 bg-white px-3 py-2"
+                        >
+                          {renderActionPreview(action)}
+                        </div>
+                      ))}
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => applyActions(index, item.actions || [])}
+                          disabled={applyingMessageIndex !== null}
+                          className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {applyingMessageIndex === index ? "Applying..." : "Apply actions"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMessages((currentMessages) =>
+                              currentMessages.map((messageItem, messageIndex) =>
+                                messageIndex === index ? { ...messageItem, actions: [] } : messageItem
+                              )
+                            )
+                          }
+                          disabled={applyingMessageIndex !== null}
+                          className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
 
