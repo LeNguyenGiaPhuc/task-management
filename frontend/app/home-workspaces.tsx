@@ -417,8 +417,8 @@ export default function HomeWorkspaces() {
 
   if (!isAuthChecked) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-100 px-6 text-slate-900">
-        <div className="rounded-lg border border-slate-200 bg-white px-5 py-4 text-sm font-medium text-slate-600 shadow-sm">
+      <main className="tm-shell flex min-h-screen items-center justify-center px-6 text-slate-900">
+        <div className="tm-panel tm-fade-in px-5 py-4 text-sm font-medium text-slate-600">
           Loading workspace...
         </div>
       </main>
@@ -427,10 +427,10 @@ export default function HomeWorkspaces() {
 
   if (!currentUser) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-100 px-6 text-slate-900">
+      <main className="tm-shell flex min-h-screen items-center justify-center px-6 text-slate-900">
         <form
           onSubmit={handleAuthSubmit}
-          className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+          className="tm-panel tm-pop-in w-full max-w-md p-6"
         >
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Task Manager
@@ -445,7 +445,7 @@ export default function HomeWorkspaces() {
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            className="tm-button-secondary mt-5 flex h-10 w-full items-center justify-center gap-2 px-4 text-sm font-semibold text-slate-800"
           >
             <span className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-xs font-bold text-blue-600">
               G
@@ -467,7 +467,7 @@ export default function HomeWorkspaces() {
               <input
                 value={authName}
                 onChange={(event) => setAuthName(event.target.value)}
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="tm-input w-full border px-3 py-2 text-sm text-slate-900 outline-none"
               />
             </label>
           )}
@@ -478,7 +478,7 @@ export default function HomeWorkspaces() {
               type="email"
               value={authEmail}
               onChange={(event) => setAuthEmail(event.target.value)}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="tm-input w-full border px-3 py-2 text-sm text-slate-900 outline-none"
             />
           </label>
 
@@ -488,7 +488,7 @@ export default function HomeWorkspaces() {
               type="password"
               value={authPassword}
               onChange={(event) => setAuthPassword(event.target.value)}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="tm-input w-full border px-3 py-2 text-sm text-slate-900 outline-none"
             />
           </label>
 
@@ -498,7 +498,7 @@ export default function HomeWorkspaces() {
             </div>
           )}
 
-          <div className="mt-5 rounded-md border border-slate-200 bg-slate-50 p-3">
+          <div className="tm-panel mt-5 p-3">
             <div className="mb-2 flex items-center justify-between gap-3">
               <p className="text-sm font-semibold text-slate-900">Demo accounts</p>
               <p className="text-xs font-medium text-slate-500">Password: password123</p>
@@ -514,7 +514,7 @@ export default function HomeWorkspaces() {
                     setAuthPassword("password123");
                     setError("");
                   }}
-                  className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-left hover:border-slate-300 hover:bg-slate-50"
+                  className="tm-card flex items-center justify-between gap-3 px-3 py-2 text-left"
                 >
                   <span className="min-w-0">
                     <span className="block text-xs font-bold text-slate-900">{account.role}</span>
@@ -531,7 +531,7 @@ export default function HomeWorkspaces() {
           <button
             type="submit"
             disabled={isAuthenticating || !authEmail.trim() || !authPassword || (authMode === "register" && !authName.trim())}
-            className="mt-5 h-10 w-full rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="tm-button-primary mt-5 h-10 w-full px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isAuthenticating ? "Please wait" : authMode === "login" ? "Login" : "Register"}
           </button>
@@ -542,7 +542,7 @@ export default function HomeWorkspaces() {
               setAuthMode(authMode === "login" ? "register" : "login");
               setError("");
             }}
-            className="mt-3 w-full rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+            className="mt-3 w-full rounded-md px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700"
           >
             {authMode === "login" ? "Need an account? Register" : "Already have an account? Login"}
           </button>
@@ -552,9 +552,9 @@ export default function HomeWorkspaces() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-900">
+    <main className="tm-shell min-h-screen text-slate-900">
       <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
-        <aside className="sticky top-0 hidden h-screen overflow-y-auto border-r border-slate-200 bg-white px-3 py-4 md:block">
+        <aside className="tm-sidebar sticky top-0 hidden h-screen overflow-y-auto border-r px-3 py-4 md:block">
           <nav className="grid gap-1 text-sm">
             {sidebarItems.map((item) => {
               const isActive = activeSidebarItem === item;
@@ -574,7 +574,7 @@ export default function HomeWorkspaces() {
                     }}
                     className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left font-medium transition ${
                       isActive
-                        ? "bg-blue-50 text-blue-700"
+                        ? "bg-blue-50 text-blue-700 shadow-sm"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
@@ -596,7 +596,7 @@ export default function HomeWorkspaces() {
                             }}
                             className={`flex items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium transition ${
                               selectedBoardId === board.id
-                                ? "bg-blue-50 text-blue-800"
+                                ? "bg-blue-100 text-blue-800 shadow-sm"
                                 : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                             }`}
                           >
@@ -641,8 +641,8 @@ export default function HomeWorkspaces() {
           </div>
         </aside>
 
-        <section className="min-w-0 bg-slate-100">
-          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-5 py-3 backdrop-blur">
+        <section className="min-w-0">
+          <header className="tm-topbar sticky top-0 z-20 border-b px-5 py-3">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="min-w-0 flex-1">
@@ -650,7 +650,7 @@ export default function HomeWorkspaces() {
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="Search boards"
-                    className="h-9 w-full max-w-2xl rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="tm-input h-9 w-full max-w-2xl border px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
                   />
                 </div>
               </div>
@@ -664,7 +664,7 @@ export default function HomeWorkspaces() {
                     setSelectedBoardId(board.id);
                   }}
                 />
-                <div className="hidden h-8 items-center rounded-md border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-600 sm:flex">
+                <div className="tm-button-secondary hidden h-8 items-center px-3 text-xs font-medium text-slate-600 sm:flex">
                   {currentUser.email}
                 </div>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-white">
@@ -673,7 +673,7 @@ export default function HomeWorkspaces() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  className="tm-button-secondary h-9 px-3 text-sm font-medium text-slate-600"
                 >
                   Logout
                 </button>
@@ -683,7 +683,7 @@ export default function HomeWorkspaces() {
 
           <div className="px-5 py-5">
             {selectedBoard ? (
-              <div className="-mx-5 -my-5 min-h-[calc(100vh-65px)] bg-slate-100">
+              <div className="-mx-5 -my-5 min-h-[calc(100vh-65px)]">
                 <BoardWorkspace
                   id={selectedBoard.id}
                   embedded
@@ -708,7 +708,7 @@ export default function HomeWorkspaces() {
                 <select
                   value={sortMode}
                   onChange={(event) => setSortMode(event.target.value as SortMode)}
-                  className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="tm-input h-9 border px-3 text-sm text-slate-900 outline-none"
                 >
                   <option value="recent">Newest first</option>
                   <option value="updated">Recently updated</option>
@@ -725,13 +725,13 @@ export default function HomeWorkspaces() {
             )}
 
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+              <div className="tm-button-secondary px-3 py-2 text-sm text-slate-600">
                 Showing {filteredBoards.length} of {boards.length}
               </div>
               <button
                 type="button"
                 onClick={() => setIsArchiveOpen(true)}
-                className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="tm-button-secondary px-3 py-2 text-sm font-medium text-slate-600"
               >
                 Archived {archivedBoards.length}
               </button>
@@ -739,7 +739,7 @@ export default function HomeWorkspaces() {
                 type="button"
                 onClick={() => setQuery("")}
                 disabled={!query.trim()}
-                className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="tm-button-secondary px-3 py-2 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Clear search
               </button>
@@ -750,7 +750,7 @@ export default function HomeWorkspaces() {
                 {filteredBoards.map((board) => (
                   <article
                     key={board.id}
-                    className="rounded-md border border-slate-200 bg-white shadow-sm transition hover:border-slate-300"
+                    className="tm-card tm-fade-in"
                   >
                     <button
                       type="button"
@@ -780,11 +780,11 @@ export default function HomeWorkspaces() {
                       </p>
 
                       <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className="rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2">
                           <p className="text-xs text-slate-500">Columns</p>
                           <p className="mt-1 font-semibold text-slate-900">{board.columns?.length || 0}</p>
                         </div>
-                        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className="rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2">
                           <p className="text-xs text-slate-500">Tasks</p>
                           <p className="mt-1 font-semibold text-slate-900">{getTaskCount(board)}</p>
                         </div>
@@ -827,7 +827,7 @@ export default function HomeWorkspaces() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-md border border-dashed border-slate-200 bg-white p-10 text-center text-slate-500">
+              <div className="tm-panel border-dashed p-10 text-center text-slate-500">
                 {boards.length === 0
                   ? "No boards yet. Create the first workspace to start."
                   : "No boards match your search."}
@@ -840,10 +840,10 @@ export default function HomeWorkspaces() {
       </div>
 
       {editingBoard && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/30 px-4 py-12">
+        <div className="tm-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-4 py-12">
           <form
             onSubmit={handleSave}
-            className="w-full max-w-md rounded-md border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl"
+            className="tm-modal tm-pop-in w-full max-w-md border border-slate-200 bg-white p-5 text-slate-900"
           >
             <h2 className="mb-4 text-xl font-bold text-slate-900">Edit board</h2>
             <label className="mb-3 block">
@@ -853,7 +853,7 @@ export default function HomeWorkspaces() {
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="tm-input w-full border px-3 py-2 text-sm text-slate-900 outline-none"
                 autoFocus
               />
             </label>
@@ -864,21 +864,21 @@ export default function HomeWorkspaces() {
               <textarea
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                className="min-h-24 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="tm-input min-h-24 w-full border px-3 py-2 text-sm text-slate-900 outline-none"
               />
             </label>
             <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={closeEdit}
-                className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="tm-button-secondary px-4 py-2 text-sm font-medium text-slate-600"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSaving || !title.trim()}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="tm-button-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSaving ? "Saving" : "Save"}
               </button>
@@ -888,8 +888,8 @@ export default function HomeWorkspaces() {
       )}
 
       {deletingBoard && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/30 px-4 py-12">
-          <div className="w-full max-w-md rounded-md border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl">
+        <div className="tm-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-4 py-12">
+          <div className="tm-modal tm-pop-in w-full max-w-md border border-slate-200 bg-white p-5 text-slate-900">
             <h2 className="text-xl font-bold text-slate-900">Archive board?</h2>
             <p className="mt-2 text-sm text-slate-600">
               {deletingBoard.title} will be hidden from active workspaces. You can restore it later.
@@ -898,7 +898,7 @@ export default function HomeWorkspaces() {
               <button
                 type="button"
                 onClick={() => setDeletingBoard(null)}
-                className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="tm-button-secondary px-4 py-2 text-sm font-medium text-slate-600"
               >
                 Cancel
               </button>
@@ -916,8 +916,8 @@ export default function HomeWorkspaces() {
       )}
 
       {isArchiveOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/30 px-4 py-12">
-          <div className="w-full max-w-2xl rounded-md border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl">
+        <div className="tm-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-4 py-12">
+          <div className="tm-modal tm-pop-in w-full max-w-2xl border border-slate-200 bg-white p-5 text-slate-900">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">Archived boards</h2>
@@ -928,7 +928,7 @@ export default function HomeWorkspaces() {
               <button
                 type="button"
                 onClick={() => setIsArchiveOpen(false)}
-                className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
+                className="tm-button-secondary px-3 py-1.5 text-sm font-medium text-slate-500"
               >
                 Close
               </button>
@@ -939,7 +939,7 @@ export default function HomeWorkspaces() {
                 {archivedBoards.map((board) => (
                   <div
                     key={board.id}
-                    className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+                    className="tm-card flex items-center justify-between gap-3 px-3 py-2"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-900">{board.title}</p>
@@ -951,7 +951,7 @@ export default function HomeWorkspaces() {
                       type="button"
                       onClick={() => handleRestoreBoard(board.id)}
                       disabled={restoringBoardId === board.id}
-                      className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="tm-button-primary px-3 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {restoringBoardId === board.id ? "Restoring" : "Restore"}
                     </button>

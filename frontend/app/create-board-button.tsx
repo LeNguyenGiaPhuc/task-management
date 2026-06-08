@@ -59,17 +59,17 @@ export default function CreateBoardButton({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="h-10 rounded-md bg-blue-600 px-4 text-sm font-medium text-white transition hover:bg-blue-500"
+        className="tm-button-primary h-10 px-4 text-sm font-semibold text-white"
       >
         + New board
       </button>
 
       {isOpen &&
         createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto bg-slate-950/30 px-6 py-10">
+        <div className="tm-modal-backdrop fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto px-6 py-10">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-2xl rounded-md border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl"
+            className="tm-modal tm-pop-in w-full max-w-2xl border border-slate-200 bg-white p-6 text-slate-900"
           >
             <div className="mb-6">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -88,7 +88,7 @@ export default function CreateBoardButton({
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="tm-input h-11 w-full border px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
                 autoFocus
               />
             </label>
@@ -100,7 +100,7 @@ export default function CreateBoardButton({
               <textarea
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                className="min-h-36 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="tm-input min-h-36 w-full border px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400"
               />
             </label>
 
@@ -114,14 +114,14 @@ export default function CreateBoardButton({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="tm-button-secondary px-4 py-2 text-sm font-medium text-slate-600"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || !title.trim()}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="tm-button-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? "Creating" : "Create space"}
               </button>

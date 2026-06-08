@@ -298,8 +298,8 @@ export default function AiChatWidget() {
   return (
     <>
       {isOpen && (
-        <section className="fixed bottom-20 right-5 z-[120] flex h-[min(760px,calc(100vh-120px))] w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-900 shadow-2xl">
-          <header className="flex items-start justify-between gap-3 border-b border-slate-200 bg-slate-950 px-4 py-3 text-white">
+        <section className="tm-ai-panel tm-slide-up fixed bottom-20 right-5 z-[120] flex h-[min(760px,calc(100vh-120px))] w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden border bg-white text-slate-900">
+          <header className="flex items-start justify-between gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-950 to-blue-950 px-4 py-3 text-white">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-200">
                 AI Assistant
@@ -312,20 +312,20 @@ export default function AiChatWidget() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="rounded-md px-2 py-1 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+              className="rounded-md px-2 py-1 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
             >
               Close
             </button>
           </header>
 
-          <div className="grid gap-2 border-b border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+          <div className="grid gap-2 border-b border-slate-200 bg-slate-50/80 p-3 sm:grid-cols-2">
             {starterPrompts.map((prompt) => (
               <button
                 key={prompt}
                 type="button"
                 onClick={() => sendMessage(prompt)}
                 disabled={isSending}
-                className="rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-xs font-medium text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="tm-button-secondary px-3 py-2 text-left text-xs font-medium text-slate-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {prompt}
               </button>
@@ -337,7 +337,7 @@ export default function AiChatWidget() {
               {messages.map((item, index) => (
                 <div
                   key={`${item.role}-${index}`}
-                  className={`max-w-[94%] rounded-lg px-3 py-2 text-sm leading-6 ${
+                  className={`max-w-[94%] rounded-lg px-3 py-2 text-sm leading-6 shadow-sm ${
                     item.role === "user"
                       ? "ml-auto bg-blue-600 text-white"
                       : "mr-auto border border-slate-200 bg-slate-50 text-slate-800"
@@ -358,7 +358,7 @@ export default function AiChatWidget() {
                       {item.actions.map((action, actionIndex) => (
                         <div
                           key={`${action.type}-${actionIndex}`}
-                          className="rounded-md border border-blue-100 bg-white px-3 py-2"
+                          className="tm-card px-3 py-2"
                         >
                           {renderActionPreview(action)}
                         </div>
@@ -368,7 +368,7 @@ export default function AiChatWidget() {
                           type="button"
                           onClick={() => applyActions(index, item.actions || [])}
                           disabled={applyingMessageIndex !== null}
-                          className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="tm-button-primary px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {applyingMessageIndex === index ? "Applying..." : "Apply actions"}
                         </button>
@@ -382,7 +382,7 @@ export default function AiChatWidget() {
                             )
                           }
                           disabled={applyingMessageIndex !== null}
-                          className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="tm-button-secondary px-3 py-2 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Dismiss
                         </button>
@@ -400,12 +400,12 @@ export default function AiChatWidget() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="border-t border-slate-200 bg-slate-50 p-3">
+          <form onSubmit={handleSubmit} className="border-t border-slate-200 bg-slate-50/80 p-3">
             <textarea
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               placeholder="Hoi AI ve board, task, sprint, risk..."
-              className="min-h-20 w-full resize-none rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="tm-input min-h-20 w-full resize-none border px-3 py-2 text-sm text-slate-900 outline-none"
             />
             <div className="mt-2 flex items-center justify-between gap-3">
               <p className="text-xs text-slate-500">
@@ -414,7 +414,7 @@ export default function AiChatWidget() {
               <button
                 type="submit"
                 disabled={isSending || !message.trim()}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="tm-button-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Send
               </button>
@@ -426,7 +426,7 @@ export default function AiChatWidget() {
       <button
         type="button"
         onClick={() => setIsOpen((currentValue) => !currentValue)}
-        className="fixed bottom-5 right-5 z-[120] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-sm font-black text-white shadow-xl ring-4 ring-blue-100 transition hover:bg-blue-500"
+        className="tm-ai-fab fixed bottom-5 right-5 z-[120] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-sm font-black text-white ring-4 ring-blue-100 transition hover:bg-blue-500"
         aria-label="Open AI assistant"
       >
         AI

@@ -1,16 +1,274 @@
 @import "tailwindcss";
 
 :root {
-  --font-sans: Arial, Helvetica, sans-serif;
+  --font-sans: Inter, "Segoe UI", Arial, Helvetica, sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --tm-bg: #dfeeff;
+  --tm-bg-soft: #eef6ff;
+  --tm-surface: rgba(250, 253, 255, 0.95);
+  --tm-surface-strong: #ffffff;
+  --tm-line: #bfd6f5;
+  --tm-line-strong: #8fb4e8;
+  --tm-text: #0b1730;
+  --tm-muted: #5d7190;
+  --tm-primary: #1d4ed8;
+  --tm-primary-strong: #1e3a8a;
+  --tm-primary-soft: #dbeafe;
+  --tm-accent: #0284c7;
+  --tm-danger: #dc2626;
+  --tm-radius: 10px;
+  --tm-radius-sm: 8px;
+  --tm-shadow-sm: 0 1px 2px rgba(30, 58, 138, 0.06), 0 1px 8px rgba(30, 58, 138, 0.04);
+  --tm-shadow-md: 0 14px 40px rgba(30, 64, 175, 0.11);
+  --tm-shadow-lg: 0 24px 80px rgba(15, 23, 42, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--tm-bg);
 }
 
 body {
-  background-color: #f3f4f6;
-  color: #1f2937;
+  background:
+    radial-gradient(circle at 18% -10%, rgba(29, 78, 216, 0.28), transparent 34%),
+    radial-gradient(circle at 88% 0%, rgba(2, 132, 199, 0.22), transparent 34%),
+    linear-gradient(180deg, #f7fbff 0%, var(--tm-bg) 100%);
+  color: var(--tm-text);
   font-family: var(--font-sans);
+  letter-spacing: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+::selection {
+  background: rgba(29, 78, 216, 0.18);
+  color: var(--tm-text);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(219, 234, 254, 0.58);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #93b4df;
+  border: 2px solid rgba(239, 246, 255, 0.92);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5b82bd;
 }
 
 .embedded-board-light {
   color: #0f172a;
+}
+
+.tm-shell {
+  background:
+    radial-gradient(circle at 16% -8%, rgba(29, 78, 216, 0.30), transparent 34%),
+    radial-gradient(circle at 90% 0%, rgba(14, 165, 233, 0.22), transparent 30%),
+    linear-gradient(180deg, #f5faff 0%, #dfeeff 100%);
+}
+
+.tm-sidebar {
+  background:
+    linear-gradient(180deg, rgba(245, 250, 255, 0.98) 0%, rgba(230, 241, 255, 0.98) 100%);
+  border-color: var(--tm-line);
+  box-shadow: 1px 0 0 rgba(30, 64, 175, 0.04);
+}
+
+.tm-topbar {
+  background: rgba(239, 247, 255, 0.92);
+  border-color: var(--tm-line);
+  box-shadow: 0 1px 0 rgba(30, 64, 175, 0.05);
+  backdrop-filter: blur(16px);
+}
+
+.tm-panel {
+  background: var(--tm-surface);
+  border: 1px solid var(--tm-line);
+  border-radius: var(--tm-radius);
+  box-shadow: var(--tm-shadow-sm);
+}
+
+.tm-card {
+  background: rgba(252, 254, 255, 0.96);
+  border: 1px solid var(--tm-line);
+  border-radius: var(--tm-radius);
+  box-shadow: var(--tm-shadow-sm);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.tm-card:hover {
+  border-color: var(--tm-line-strong);
+  box-shadow: var(--tm-shadow-md);
+  transform: translateY(-2px);
+}
+
+.tm-input {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: var(--tm-line-strong);
+  border-radius: var(--tm-radius-sm);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.tm-input:focus {
+  border-color: var(--tm-primary);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.14);
+}
+
+.tm-button-primary {
+  background: linear-gradient(135deg, var(--tm-primary) 0%, var(--tm-primary-strong) 100%);
+  border-radius: var(--tm-radius-sm);
+  box-shadow: 0 10px 24px rgba(29, 78, 216, 0.24);
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.tm-button-primary:hover {
+  filter: brightness(1.04);
+  box-shadow: 0 14px 30px rgba(29, 78, 216, 0.30);
+  transform: translateY(-1px);
+}
+
+.tm-button-secondary {
+  background: rgba(249, 252, 255, 0.92);
+  border: 1px solid var(--tm-line);
+  border-radius: var(--tm-radius-sm);
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.tm-button-secondary:hover {
+  background: #eef6ff;
+  border-color: var(--tm-line-strong);
+  transform: translateY(-1px);
+}
+
+.tm-board-header {
+  background:
+    linear-gradient(180deg, rgba(247, 251, 255, 0.98), rgba(232, 242, 255, 0.96)),
+    radial-gradient(circle at 8% 0%, rgba(29, 78, 216, 0.20), transparent 34%);
+  border-color: var(--tm-line);
+  box-shadow: 0 1px 0 rgba(30, 64, 175, 0.06);
+}
+
+.tm-board-canvas {
+  background:
+    linear-gradient(180deg, rgba(224, 239, 255, 0.98), rgba(233, 244, 255, 0.98)),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.13) 1px, transparent 1px);
+  background-size: auto, 42px 42px;
+}
+
+.tm-column {
+  background: rgba(250, 253, 255, 0.94);
+  border-color: var(--tm-line);
+  border-radius: var(--tm-radius);
+  box-shadow: var(--tm-shadow-sm);
+  transition: box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.tm-column:hover {
+  border-color: var(--tm-line-strong);
+}
+
+.tm-task {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: var(--tm-line);
+  border-radius: var(--tm-radius-sm);
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.06);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.tm-task:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 12px 24px rgba(30, 64, 175, 0.11);
+}
+
+.tm-modal-backdrop {
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(8px);
+}
+
+.tm-modal {
+  border-radius: 14px;
+  box-shadow: var(--tm-shadow-lg);
+}
+
+.tm-ai-panel {
+  border-radius: 14px;
+  border-color: var(--tm-line);
+  box-shadow: var(--tm-shadow-lg);
+}
+
+.tm-ai-fab {
+  box-shadow: 0 18px 40px rgba(29, 78, 216, 0.32);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.tm-ai-fab:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 24px 54px rgba(29, 78, 216, 0.38);
+}
+
+.tm-fade-in {
+  animation: tm-fade-in 220ms ease both;
+}
+
+.tm-pop-in {
+  animation: tm-pop-in 200ms ease both;
+}
+
+.tm-slide-up {
+  animation: tm-slide-up 220ms ease both;
+}
+
+@keyframes tm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes tm-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes tm-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

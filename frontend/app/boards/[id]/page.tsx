@@ -414,8 +414,8 @@ function TaskDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
-      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-5 shadow-2xl">
+    <div className="tm-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="tm-modal tm-pop-in max-h-[92vh] w-full max-w-3xl overflow-y-auto bg-white p-5">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -426,7 +426,7 @@ function TaskDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
+            className="tm-button-secondary px-3 py-1.5 text-sm font-medium text-slate-500"
           >
             Close
           </button>
@@ -438,7 +438,7 @@ function TaskDetailModal({
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+              className="tm-input w-full border px-3 py-2 text-sm outline-none"
             />
           </label>
 
@@ -447,7 +447,7 @@ function TaskDetailModal({
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              className="min-h-28 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+              className="tm-input min-h-28 w-full border px-3 py-2 text-sm outline-none"
             />
           </label>
 
@@ -457,7 +457,7 @@ function TaskDetailModal({
               <select
                 value={taskType}
                 onChange={(event) => setTaskType(event.target.value as TaskType)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                className="tm-input w-full border px-3 py-2 text-sm outline-none"
               >
                 {taskTypes.map((item) => (
                   <option key={item} value={item}>
@@ -472,7 +472,7 @@ function TaskDetailModal({
               <select
                 value={priority}
                 onChange={(event) => setPriority(event.target.value as Priority)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                className="tm-input w-full border px-3 py-2 text-sm outline-none"
               >
                 {priorities.map((item) => (
                   <option key={item} value={item}>
@@ -487,7 +487,7 @@ function TaskDetailModal({
               <select
                 value={assigneeId}
                 onChange={(event) => setAssigneeId(event.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                className="tm-input w-full border px-3 py-2 text-sm outline-none"
               >
                 <option value="">Unassigned</option>
                 {members.map((member) => (
@@ -504,7 +504,7 @@ function TaskDetailModal({
                 type="date"
                 value={dueDate}
                 onChange={(event) => setDueDate(event.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                className="tm-input w-full border px-3 py-2 text-sm outline-none"
               />
             </label>
           </div>
@@ -531,7 +531,7 @@ function TaskDetailModal({
             <button
               type="submit"
               disabled={isSaving || !title.trim()}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="tm-button-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSaving ? "Saving" : "Save changes"}
             </button>
@@ -591,12 +591,12 @@ function TaskDetailModal({
               value={subTaskTitle}
               onChange={(event) => setSubTaskTitle(event.target.value)}
               placeholder="Add checklist item"
-              className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+              className="tm-input min-w-0 flex-1 border px-3 py-2 text-sm outline-none"
             />
             <button
               type="submit"
               disabled={isAddingSubTask || !subTaskTitle.trim()}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="tm-button-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               Add
             </button>
@@ -615,12 +615,12 @@ function TaskDetailModal({
                 value={commentContent}
                 onChange={(event) => setCommentContent(event.target.value)}
                 placeholder="Write a comment"
-                className="min-h-20 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                className="tm-input min-h-20 w-full border px-3 py-2 text-sm outline-none"
               />
               <button
                 type="submit"
                 disabled={isAddingComment || !commentContent.trim()}
-                className="justify-self-end rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="tm-button-primary justify-self-end px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isAddingComment ? "Posting" : "Post comment"}
               </button>
@@ -667,7 +667,7 @@ function TaskDetailModal({
             </div>
 
             <form onSubmit={handleCreateAttachment} className="mb-3 grid gap-2">
-              <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-center hover:bg-slate-100">
+              <label className="flex min-h-20 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-center transition hover:border-blue-300 hover:bg-blue-50">
                 <span className="text-sm font-semibold text-slate-800">
                   {attachmentFile ? attachmentFile.name : "Choose file from computer"}
                 </span>
@@ -685,7 +685,7 @@ function TaskDetailModal({
               <button
                 type="submit"
                 disabled={isAddingAttachment || !attachmentFile}
-                className="justify-self-end rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="tm-button-primary justify-self-end px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isAddingAttachment ? "Uploading" : "Upload file"}
               </button>
@@ -1727,29 +1727,15 @@ export function BoardWorkspace({
     }
   };
 
-  const pageBackground = embedded ? "#f6f8fb" : getBoardPageBackground(boardBackground);
-  const headerClass = embedded
-    ? "border-b border-slate-200 bg-white px-6 py-3"
-    : "border-b border-slate-200 bg-white px-6 py-3";
-  const inputClass = embedded
-    ? "h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-    : "h-9 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200";
-  const smallInputClass = embedded
-    ? "min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-    : "min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200";
-  const innerCardClass = embedded
-    ? "rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
-    : "rounded-md border border-slate-200 bg-white px-3 py-2";
-  const columnClass = embedded
-    ? "flex max-h-[calc(100vh-140px)] min-w-[300px] flex-col rounded-lg border border-slate-200 bg-white shadow-sm"
-    : "flex max-h-[calc(100vh-140px)] min-w-[300px] flex-col rounded-lg border border-slate-200 bg-slate-50 shadow-sm";
-  const taskCardClass = embedded
-    ? "rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300"
-    : "rounded-md border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:shadow-md";
-  const addColumnClass = embedded
-    ? "min-w-[300px] self-start rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
-    : "min-w-[300px] self-start rounded-lg border border-slate-200 bg-white p-3 shadow-sm";
-  const reportPanelClass = "rounded-lg border border-slate-200 bg-white p-4 shadow-sm";
+  const pageBackground = embedded ? "transparent" : getBoardPageBackground(boardBackground);
+  const headerClass = "tm-board-header border-b px-6 py-3";
+  const inputClass = "tm-input h-9 border px-3 text-sm text-slate-900 outline-none";
+  const smallInputClass = "tm-input min-w-0 flex-1 border px-2 py-1.5 text-sm text-slate-900 outline-none";
+  const innerCardClass = "rounded-md border border-slate-200 bg-white/80 px-3 py-2";
+  const columnClass = "tm-column flex max-h-[calc(100vh-170px)] min-w-[300px] flex-col border";
+  const taskCardClass = "tm-task rounded-md border p-3";
+  const addColumnClass = "tm-panel min-w-[300px] self-start p-3";
+  const reportPanelClass = "tm-panel p-4";
   const summaryCards = [
     {
       label: "Open tasks",
@@ -1779,7 +1765,7 @@ export function BoardWorkspace({
 
   return (
     <div
-      className={`${embedded ? "embedded-board-light min-h-full" : "min-h-screen"} text-slate-900`}
+      className={`${embedded ? "embedded-board-light min-h-full" : "tm-shell min-h-screen"} text-slate-900`}
       style={{ backgroundColor: pageBackground }}
     >
       <header className={headerClass}>
@@ -1855,7 +1841,7 @@ export function BoardWorkspace({
                   setDueFilter("ALL");
                 }}
                 disabled={!isFiltering}
-                className={`${inputClass} font-medium text-slate-600 border-slate-300 bg-slate-50 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-1 xl:col-span-2`}
+                className={`${inputClass} bg-slate-50 font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-1 xl:col-span-2`}
               >
                 Clear filters
               </button>
@@ -1863,7 +1849,7 @@ export function BoardWorkspace({
                 <button
                   type="button"
                   onClick={openSettings}
-                  className="h-9 rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-500 sm:col-span-1 xl:col-span-2"
+                  className="tm-button-primary h-9 px-3 text-sm font-semibold text-white sm:col-span-1 xl:col-span-2"
                 >
                   Board settings
                 </button>
@@ -1897,7 +1883,7 @@ export function BoardWorkspace({
             ))}
           </div>
 
-          <section className="rounded-lg border border-slate-200 bg-white p-2">
+          <section className="tm-panel p-2">
             <div className="mb-2 flex items-center justify-between gap-2">
               <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500">Summary</h2>
               <span className={`w-fit rounded px-2 py-0.5 text-xs font-bold ring-1 ${boardHealth.className}`}>
@@ -1909,7 +1895,7 @@ export function BoardWorkspace({
               {summaryCards.map((card) => (
                 <div
                   key={card.label}
-                  className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-white/80 px-3 py-2"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-xs font-medium text-slate-500">{card.label}</p>
@@ -1924,7 +1910,7 @@ export function BoardWorkspace({
           </section>
 
           <div className="grid gap-3 lg:grid-cols-1">
-            <section className="rounded-lg border border-slate-200 bg-white p-2">
+            <section className="tm-panel p-2">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <div>
                   <h2 className={`text-xs font-bold uppercase tracking-wide ${embedded ? "text-slate-500" : "text-slate-500"}`}>Team</h2>
@@ -2019,7 +2005,7 @@ export function BoardWorkspace({
                   <button
                     type="submit"
                     disabled={isSavingMember}
-                    className="h-9 rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="tm-button-primary h-9 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isSavingMember ? "Saving" : "Save"}
                   </button>
@@ -2049,7 +2035,7 @@ export function BoardWorkspace({
                   <button
                     type="submit"
                     disabled={isAddingMember || !memberName.trim() || !memberProjectRole}
-                    className="h-9 rounded-md bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="tm-button-primary h-9 px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Add
                   </button>
@@ -2066,7 +2052,7 @@ export function BoardWorkspace({
 
       {activeView === "BOARD" ? (
       <DragDropContext onDragEnd={onDragEnd}>
-        <main className={`${embedded ? "w-full" : "mx-auto max-w-7xl"} overflow-x-auto px-6 py-4`}>
+        <main className={`tm-board-canvas ${embedded ? "w-full" : "mx-auto max-w-7xl"} overflow-x-auto px-6 py-4`}>
           <Droppable droppableId="board-columns" direction="horizontal" type="COLUMN">
             {(provided) => (
               <div ref={provided.innerRef} {...provided.droppableProps} className="flex gap-4">
@@ -2082,7 +2068,7 @@ export function BoardWorkspace({
                         ref={columnProvided.innerRef}
                         {...columnProvided.draggableProps}
                         className={`${columnClass} ${
-                          columnSnapshot.isDragging ? "shadow-lg ring-2 ring-slate-300" : ""
+                          columnSnapshot.isDragging ? "shadow-lg ring-2 ring-blue-200" : ""
                         }`}
                       >
                         <div className={`border-b p-3 ${embedded ? "border-slate-200" : "border-slate-200"}`} {...columnProvided.dragHandleProps}>
@@ -2097,7 +2083,7 @@ export function BoardWorkspace({
                               <button
                                 type="submit"
                                 disabled={savingColumnId === column.id || !editingColumnTitle.trim()}
-                                className="rounded-md bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+                                className="tm-button-primary px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
                               >
                                 Save
                               </button>
@@ -2165,7 +2151,7 @@ export function BoardWorkspace({
                                       }}
                                       className={`${taskCardClass} ${
                                         snapshot.isDragging
-                                          ? "shadow-lg ring-2 ring-slate-300"
+                                          ? "shadow-lg ring-2 ring-blue-200"
                                           : ""
                                       }`}
                                     >
@@ -2239,7 +2225,7 @@ export function BoardWorkspace({
                             <button
                               type="submit"
                               disabled={savingTaskColumnId === column.id || !taskTitles[column.id]?.trim()}
-                              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="tm-button-primary px-3 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               Add
                             </button>
@@ -2265,7 +2251,7 @@ export function BoardWorkspace({
                     <button
                       type="submit"
                       disabled={isSavingColumn || !columnTitle.trim()}
-                      className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="tm-button-primary w-full px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isSavingColumn ? "Creating" : "Add column"}
                     </button>
@@ -2510,10 +2496,10 @@ export function BoardWorkspace({
       )}
 
       {isSettingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
+        <div className="tm-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
           <form
             onSubmit={handleSaveSettings}
-            className="w-full max-w-lg rounded-lg bg-white p-5 shadow-2xl"
+            className="tm-modal tm-pop-in w-full max-w-lg bg-white p-5"
           >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
@@ -2525,7 +2511,7 @@ export function BoardWorkspace({
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen(false)}
-                className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100"
+                className="tm-button-secondary px-3 py-1.5 text-sm font-medium text-slate-500"
               >
                 Close
               </button>
@@ -2536,7 +2522,7 @@ export function BoardWorkspace({
               <input
                 value={settingsTitle}
                 onChange={(event) => setSettingsTitle(event.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                className="tm-input w-full border px-3 py-2 text-sm outline-none"
                 autoFocus
               />
             </label>
@@ -2546,7 +2532,7 @@ export function BoardWorkspace({
               <textarea
                 value={settingsDescription}
                 onChange={(event) => setSettingsDescription(event.target.value)}
-                className="min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+                className="tm-input min-h-24 w-full border px-3 py-2 text-sm outline-none"
               />
             </label>
 
@@ -2554,14 +2540,14 @@ export function BoardWorkspace({
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen(false)}
-                className="rounded-md px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                className="tm-button-secondary px-4 py-2 text-sm font-medium text-slate-600"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSavingSettings || !settingsTitle.trim()}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="tm-button-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSavingSettings ? "Saving" : "Save settings"}
               </button>
