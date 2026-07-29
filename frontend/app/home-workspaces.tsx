@@ -212,22 +212,34 @@ export default function HomeWorkspaces() {
   }, []);
 
   const loadSession = useCallback(async () => {
-    const response = await apiFetch("/api/auth/me");
+    try {
+      const response = await apiFetch("/api/auth/me");
 
-    if (!response.ok) {
+      if (!response.ok) {
+        clearAuthToken();
+        setCurrentUser(null);
+        setBoards([]);
+        setArchivedBoards([]);
+        setWorkspaceAnalytics(null);
+        return;
+      }
+
+      const data = (await response.json()) as { user: AuthUser };
+      setCurrentUser(data.user);
+      await Promise.all([loadBoards(), loadArchivedBoards(), loadWorkspaceAnalytics()]);
+    } catch (sessionError) {
+      console.error("Could not reach the backend while restoring the session.", sessionError);
       clearAuthToken();
       setCurrentUser(null);
       setBoards([]);
       setArchivedBoards([]);
       setWorkspaceAnalytics(null);
+      setError(
+        `Cannot connect to the backend at ${API_BASE_URL}. Check the Render URL and CORS settings.`
+      );
+    } finally {
       setIsAuthChecked(true);
-      return;
     }
-
-    const data = (await response.json()) as { user: AuthUser };
-    setCurrentUser(data.user);
-    await Promise.all([loadBoards(), loadArchivedBoards(), loadWorkspaceAnalytics()]);
-    setIsAuthChecked(true);
   }, [loadArchivedBoards, loadBoards, loadWorkspaceAnalytics]);
 
   useEffect(() => {
