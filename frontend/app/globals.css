@@ -427,3 +427,10 @@ button:disabled {
     min-height: 42px;
   }
 }
+
+/* MartinDesk uses a sharp, rectangular visual system across every screen. */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}
