@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { API_BASE_URL, apiFetch, clearAuthToken, setAuthToken, type AuthUser } from "./api";
 import { BoardWorkspace } from "./boards/[id]/page";
 import CreateBoardButton from "./create-board-button";
+import LandingAuth from "./landing-auth";
 
 type BoardColumnSummary = {
   id: string;
@@ -439,134 +440,36 @@ export default function HomeWorkspaces() {
 
   if (!currentUser) {
     return (
-      <main className="tm-shell flex min-h-screen items-center justify-center px-6 text-slate-900">
-        <form
-          onSubmit={handleAuthSubmit}
-          className="tm-panel tm-pop-in w-full max-w-md p-6"
-        >
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Task Manager
-          </p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-950">
-            {authMode === "login" ? "Login to your workspace" : "Create your account"}
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Use a real account to manage boards with OWNER, ADMIN, and MEMBER permissions.
-          </p>
-
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            className="tm-button-secondary mt-5 flex h-10 w-full items-center justify-center gap-2 px-4 text-sm font-semibold text-slate-800"
-          >
-            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-xs font-bold text-blue-600">
-              G
-            </span>
-            Continue with Google
-          </button>
-
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              or
-            </span>
-            <div className="h-px flex-1 bg-slate-200" />
-          </div>
-
-          {authMode === "register" && (
-            <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">Name</span>
-              <input
-                value={authName}
-                onChange={(event) => setAuthName(event.target.value)}
-                className="tm-input w-full border px-3 py-2 text-sm text-slate-900 outline-none"
-              />
-            </label>
-          )}
-
-          <label className="mt-4 block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">Email</span>
-            <input
-              type="email"
-              value={authEmail}
-              onChange={(event) => setAuthEmail(event.target.value)}
-              className="tm-input w-full border px-3 py-2 text-sm text-slate-900 outline-none"
-            />
-          </label>
-
-          <label className="mt-4 block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">Password</span>
-            <input
-              type="password"
-              value={authPassword}
-              onChange={(event) => setAuthPassword(event.target.value)}
-              className="tm-input w-full border px-3 py-2 text-sm text-slate-900 outline-none"
-            />
-          </label>
-
-          {error && (
-            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-              {error}
-            </div>
-          )}
-
-          <div className="tm-panel mt-5 p-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-slate-900">Demo accounts</p>
-              <p className="text-xs font-medium text-slate-500">Password: password123</p>
-            </div>
-            <div className="grid gap-2">
-              {demoAccounts.map((account) => (
-                <button
-                  key={account.email}
-                  type="button"
-                  onClick={() => {
-                    setAuthMode("login");
-                    setAuthEmail(account.email);
-                    setAuthPassword("password123");
-                    setError("");
-                  }}
-                  className="tm-card flex items-center justify-between gap-3 px-3 py-2 text-left"
-                >
-                  <span className="min-w-0">
-                    <span className="block text-xs font-bold text-slate-900">{account.role}</span>
-                    <span className="block truncate text-xs text-slate-500">{account.email}</span>
-                  </span>
-                  <span className="shrink-0 text-[11px] font-medium text-slate-500">
-                    {account.note}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isAuthenticating || !authEmail.trim() || !authPassword || (authMode === "register" && !authName.trim())}
-            className="tm-button-primary mt-5 h-10 w-full px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isAuthenticating ? "Please wait" : authMode === "login" ? "Login" : "Register"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setAuthMode(authMode === "login" ? "register" : "login");
-              setError("");
-            }}
-            className="mt-3 w-full rounded-md px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-blue-50 hover:text-blue-700"
-          >
-            {authMode === "login" ? "Need an account? Register" : "Already have an account? Login"}
-          </button>
-        </form>
-      </main>
+      <LandingAuth
+        authMode={authMode}
+        authName={authName}
+        authEmail={authEmail}
+        authPassword={authPassword}
+        isAuthenticating={isAuthenticating}
+        error={error}
+        demoAccounts={demoAccounts}
+        onAuthSubmit={handleAuthSubmit}
+        onGoogleLogin={handleGoogleLogin}
+        onModeChange={setAuthMode}
+        onNameChange={setAuthName}
+        onEmailChange={setAuthEmail}
+        onPasswordChange={setAuthPassword}
+        onErrorClear={() => setError("")}
+      />
     );
   }
 
   return (
-    <main className="tm-shell min-h-screen text-slate-900">
+    <main className="tm-shell tm-dashboard-shell min-h-screen text-slate-900">
       <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
         <aside className="tm-sidebar sticky top-0 hidden h-screen overflow-y-auto border-r px-3 py-4 md:block">
+          <div className="tm-sidebar-brand mb-4 flex items-center gap-3">
+            <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">TM</span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black tracking-tight text-slate-950">Task Manager</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Your workspace</p>
+            </div>
+          </div>
           <nav className="grid gap-1 text-sm">
             {sidebarItems.map((item) => {
               const isActive = activeSidebarItem === item;
@@ -657,6 +560,9 @@ export default function HomeWorkspaces() {
           <header className="tm-topbar sticky top-0 z-20 border-b px-5 py-3">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex min-w-0 items-center gap-3">
+                <div className="md:hidden">
+                  <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">TM</span>
+                </div>
                 <div className="min-w-0 flex-1">
                   <input
                     value={query}
@@ -703,31 +609,51 @@ export default function HomeWorkspaces() {
               </div>
             ) : (
               <>
-            <div className="mb-4">
-              <p className="text-sm font-medium text-slate-500">Spaces</p>
-              <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="tm-dashboard-hero mb-6 p-6 text-white sm:p-7">
+              <div className="relative z-[1] flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-900 text-xs font-bold text-white">
-                      TM
-                    </div>
-                    <h1 className="text-2xl font-bold text-slate-900">Task Management Workspace</h1>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {displayWorkspaceBoards} boards / {displayWorkspaceColumns} columns / {displayWorkspaceTasks} tasks
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">Good to see you again</p>
+                  <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+                    {currentUser.name.split(" ")[0]}&apos;s workspace
+                  </h1>
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-blue-100/85">
+                    Keep priorities visible, give your team room to move, and turn every board into measurable progress.
                   </p>
                 </div>
-                <select
-                  value={sortMode}
-                  onChange={(event) => setSortMode(event.target.value as SortMode)}
-                  className="tm-input h-9 border px-3 text-sm text-slate-900 outline-none"
-                >
-                  <option value="recent">Newest first</option>
-                  <option value="updated">Recently updated</option>
-                  <option value="az">A to Z</option>
-                  <option value="za">Z to A</option>
-                </select>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                  <div className="tm-dashboard-stat rounded-xl px-3 py-2.5 sm:min-w-24">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-blue-100">Boards</p>
+                    <p className="mt-1 text-xl font-black">{displayWorkspaceBoards}</p>
+                  </div>
+                  <div className="tm-dashboard-stat rounded-xl px-3 py-2.5 sm:min-w-24">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-blue-100">Tasks</p>
+                    <p className="mt-1 text-xl font-black">{displayWorkspaceTasks}</p>
+                  </div>
+                  <div className="tm-dashboard-stat rounded-xl px-3 py-2.5 sm:min-w-24">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-blue-100">Done</p>
+                    <p className="mt-1 text-xl font-black">{workspaceSummary?.done_tasks ?? 0}</p>
+                  </div>
+                </div>
               </div>
+            </div>
+
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Spaces</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {displayWorkspaceBoards} boards / {displayWorkspaceColumns} columns / {displayWorkspaceTasks} tasks
+                </p>
+              </div>
+              <select
+                value={sortMode}
+                onChange={(event) => setSortMode(event.target.value as SortMode)}
+                className="tm-input h-9 border px-3 text-sm text-slate-900 outline-none"
+              >
+                <option value="recent">Newest first</option>
+                <option value="updated">Recently updated</option>
+                <option value="az">A to Z</option>
+                <option value="za">Z to A</option>
+              </select>
             </div>
 
             {error && (
