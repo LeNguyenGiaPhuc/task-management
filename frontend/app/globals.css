@@ -375,6 +375,17 @@ button:disabled {
   box-shadow: 0 18px 48px rgba(15, 23, 42, 0.10);
 }
 
+.tm-auth-backdrop {
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(10px);
+}
+
+.tm-auth-modal {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(191, 219, 254, 0.92);
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28);
+}
+
 /* Workspace dashboard */
 .tm-dashboard-hero {
   position: relative;

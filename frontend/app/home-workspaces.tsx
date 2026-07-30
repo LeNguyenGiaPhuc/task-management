@@ -46,24 +46,6 @@ type SidebarItem = "Spaces";
 
 const sidebarItems: SidebarItem[] = ["Spaces"];
 
-const demoAccounts = [
-  {
-    role: "OWNER",
-    email: "demo@task-manager.local",
-    note: "Full board control",
-  },
-  {
-    role: "ADMIN",
-    email: "designer@task-manager.local",
-    note: "Manage board and columns",
-  },
-  {
-    role: "MEMBER",
-    email: "engineer@task-manager.local",
-    note: "Work on tasks",
-  },
-];
-
 function getTaskCount(board: HomeBoard) {
   return (board.columns || []).reduce(
     (total, column) => total + (column.tasks?.length || 0),
@@ -103,6 +85,7 @@ export default function HomeWorkspaces() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -282,7 +265,7 @@ export default function HomeWorkspaces() {
       });
 
       if (!response.ok) {
-        const data = (await response.json()) as { error?: string };
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error || "Authentication failed");
       }
 
@@ -290,6 +273,7 @@ export default function HomeWorkspaces() {
       setAuthToken(data.token);
       setCurrentUser(data.user);
       setAuthPassword("");
+      setIsAuthModalOpen(false);
       await Promise.all([loadBoards(), loadArchivedBoards(), loadWorkspaceAnalytics()]);
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Could not authenticate.");
@@ -442,14 +426,20 @@ export default function HomeWorkspaces() {
     return (
       <LandingAuth
         authMode={authMode}
+        isOpen={isAuthModalOpen}
         authName={authName}
         authEmail={authEmail}
         authPassword={authPassword}
         isAuthenticating={isAuthenticating}
         error={error}
-        demoAccounts={demoAccounts}
         onAuthSubmit={handleAuthSubmit}
         onGoogleLogin={handleGoogleLogin}
+        onOpen={(mode) => {
+          setAuthMode(mode);
+          setError("");
+          setIsAuthModalOpen(true);
+        }}
+        onClose={() => setIsAuthModalOpen(false)}
         onModeChange={setAuthMode}
         onNameChange={setAuthName}
         onEmailChange={setAuthEmail}
