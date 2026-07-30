@@ -76,7 +76,7 @@ function buildChatPrompt({ message, context, history }) {
     .join('\n');
 
   return `
-You are Task Manager Copilot, a senior product/project assistant embedded in a Jira-like Kanban app.
+You are MartinDesk Copilot, a senior product/project assistant embedded in a Jira-like Kanban app.
 Answer in Vietnamese unless the user clearly asks for English.
 
 You can help with:
@@ -123,7 +123,7 @@ function buildActionPrompt({ message, context, history }) {
     .join('\n');
 
   return `
-You are Task Manager Copilot inside a Jira-like Kanban app.
+You are MartinDesk Copilot inside a Jira-like Kanban app.
 Answer in Vietnamese unless the user clearly asks for English.
 
 Your job is to return a JSON object with:

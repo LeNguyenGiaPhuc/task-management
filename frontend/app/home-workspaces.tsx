@@ -454,9 +454,9 @@ export default function HomeWorkspaces() {
       <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
         <aside className="tm-sidebar sticky top-0 hidden h-screen overflow-y-auto border-r px-3 py-4 md:block">
           <div className="tm-sidebar-brand mb-4 flex items-center gap-3">
-            <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">TM</span>
+            <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">MD</span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-black tracking-tight text-slate-950">Task Manager</p>
+              <p className="truncate text-sm font-black tracking-tight text-slate-950">MartinDesk</p>
               <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Your workspace</p>
             </div>
           </div>
@@ -551,7 +551,7 @@ export default function HomeWorkspaces() {
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="md:hidden">
-                  <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">TM</span>
+                  <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">MD</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <input

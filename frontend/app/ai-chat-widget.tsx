@@ -304,7 +304,7 @@ export default function AiChatWidget() {
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-200">
                 AI Assistant
               </p>
-              <h2 className="text-base font-bold">Task Manager Copilot</h2>
+              <h2 className="text-base font-bold">MartinDesk Copilot</h2>
               <p className="mt-0.5 text-xs text-slate-300">
                 {boardId ? "Dang dung context board hien tai" : "Dang dung context workspace"}
               </p>

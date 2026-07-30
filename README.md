@@ -1,4 +1,4 @@
-# Task Manager
+# MartinDesk
 
 A full-stack Jira-style task management application built with Next.js, Express.js, Prisma, and PostgreSQL. The system supports workspace management, Kanban boards, role-based access control, Google OAuth login, task collaboration, analytics dashboards, file attachments, and an AI assistant that can propose and execute task-related actions after user confirmation.
 

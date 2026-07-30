@@ -30,7 +30,7 @@ app.use(generalLimiter);
 app.use('/uploads', uploadLimiter, express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
-  res.send('Task Manager API is running smoothly!');
+  res.send('MartinDesk API is running smoothly!');
 });
 
 app.use('/api/auth/login', authLimiter);

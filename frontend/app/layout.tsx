@@ -3,8 +3,8 @@ import AiChatWidget from "./ai-chat-widget";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Task Manager",
-  description: "Project management and kanban workspace",
+  title: "MartinDesk",
+  description: "MartinDesk project management and Kanban workspace",
 };
 
 export default function RootLayout({

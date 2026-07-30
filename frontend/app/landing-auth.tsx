@@ -73,8 +73,8 @@ export default function LandingAuth({
 
       <nav className="tm-landing-nav relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5 lg:px-10">
         <div className="flex items-center gap-3">
-          <span className="tm-brand-mark flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-black text-white">TM</span>
-          <span className="text-base font-extrabold tracking-tight text-slate-950">Task Manager</span>
+          <span className="tm-brand-mark flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-black text-white">MD</span>
+          <span className="text-base font-extrabold tracking-tight text-slate-950">MartinDesk</span>
         </div>
         <div className="hidden items-center gap-7 text-sm font-semibold text-slate-500 md:flex">
           <a href="#features" className="transition hover:text-slate-950">Features</a>
@@ -186,7 +186,7 @@ export default function LandingAuth({
         <div className="tm-auth-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title" onMouseDown={closeAuth}>
           <div className="tm-auth-modal tm-pop-in relative w-full max-w-md rounded-[1.5rem] p-5 sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
             <button type="button" onClick={closeAuth} aria-label="Close authentication dialog" className="absolute right-4 top-4 rounded-full px-2 py-1 text-lg leading-none text-slate-400 transition hover:bg-slate-100 hover:text-slate-800">×</button>
-            <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-600">Task Manager</p>
+            <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-600">MartinDesk</p>
             <h2 id="auth-modal-title" className="mt-1 text-2xl font-black tracking-tight text-slate-950">
               {authMode === "login" ? "Enter your workspace" : "Create your workspace"}
             </h2>
@@ -223,7 +223,7 @@ export default function LandingAuth({
               {error && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-700">{error}</div>}
 
               <button type="submit" disabled={isAuthenticating || !authEmail.trim() || !authPassword || (authMode === "register" && !authName.trim())} className="tm-button-primary mt-5 h-11 w-full px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
-                {isAuthenticating ? "Please wait" : authMode === "login" ? "Sign in to Task Manager" : "Create account"}
+                {isAuthenticating ? "Please wait" : authMode === "login" ? "Sign in to MartinDesk" : "Create account"}
               </button>
             </form>
 
