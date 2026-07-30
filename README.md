@@ -220,7 +220,7 @@ task_priority = LOW | MEDIUM | HIGH | URGENT
 board_role = OWNER | ADMIN | MEMBER
 ```
 
-Additional runtime-managed columns used by the application:
+The following authentication, archive, task-type, and project-role fields are included in the Prisma schema and baseline migration:
 
 - `users.password_hash`
 - `users.google_id`
@@ -229,6 +229,7 @@ Additional runtime-managed columns used by the application:
 - `tasks.task_type`
 - `tasks.archived_at`
 - `board_members.project_role`
+- `task_comments`
 
 ## Environment Requirements
 
@@ -306,6 +307,24 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ```
 
 ## Prisma
+
+The existing Supabase database was baselined with the migration in
+`backend/prisma/migrations/20260730000000_baseline`. The baseline is marked as
+applied in the current production database; it is not re-run against that database.
+
+For a new schema change during development:
+
+```bash
+cd backend
+npx prisma migrate dev --name describe_the_change
+```
+
+For deployment:
+
+```bash
+cd backend
+npx prisma migrate deploy
+```
 
 Generate Prisma Client:
 
