@@ -1,8 +1,10 @@
 "use client";
 
-import { FormEvent, use, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { FormEvent, type ReactNode, use, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { API_BASE_URL, apiFetch, type AuthUser } from "../../api";
+import { moveTaskInLists } from "./drag-and-drop.mjs";
 
 type Priority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 type TaskType = "TASK" | "BUG" | "STORY" | "EPIC";
@@ -12,6 +14,11 @@ type EditableBoardRole = "ADMIN" | "MEMBER";
 type AssigneeFilter = "ALL" | "UNASSIGNED" | string;
 type DueFilter = "ALL" | "OVERDUE" | "DUE_SOON" | "NO_DUE";
 type BoardView = "BOARD" | "REPORTS";
+
+function renderDraggingCard(card: ReactNode, isDragging: boolean) {
+  if (!isDragging || typeof document === "undefined") return card;
+  return createPortal(card, document.body);
+}
 
 type User = {
   id: string;
@@ -1732,41 +1739,40 @@ export function BoardWorkspace({
 
     const sourceCol = columns[sourceColIndex];
     const destCol = columns[destColIndex];
+    const moveResult = moveTaskInLists({
+      sourceTasks: sourceCol.tasks,
+      destinationTasks: destCol.tasks,
+      sourceIndex: source.index,
+      destinationIndex: destination.index,
+      destinationColumnId,
+      sameLocation: sourceCol.id === destCol.id,
+    });
+
+    if (!moveResult) {
+      setError("Task list changed while dragging. Please try again.");
+      await fetchBoardData();
+      return;
+    }
+
     const newColumns = [...columns];
-    let destTasks: Task[] = Array.from(destCol.tasks);
 
     if (sourceCol.id === destCol.id) {
-      const newTasks: Task[] = Array.from(sourceCol.tasks);
-      const [movedTask] = newTasks.splice(source.index, 1);
-      newTasks.splice(destination.index, 0, movedTask);
-      newColumns[sourceColIndex] = { ...sourceCol, tasks: newTasks };
-      destTasks = newTasks;
+      newColumns[sourceColIndex] = {
+        ...sourceCol,
+        tasks: moveResult.destinationTasks,
+      };
     } else {
-      const sourceTasks: Task[] = Array.from(sourceCol.tasks);
-      const [movedTask] = sourceTasks.splice(source.index, 1);
-      destTasks.splice(destination.index, 0, {
-        ...movedTask,
-        column_id: destinationColumnId,
-      });
-      newColumns[sourceColIndex] = { ...sourceCol, tasks: sourceTasks };
-      newColumns[destColIndex] = { ...destCol, tasks: destTasks };
+      newColumns[sourceColIndex] = {
+        ...sourceCol,
+        tasks: moveResult.sourceTasks,
+      };
+      newColumns[destColIndex] = {
+        ...destCol,
+        tasks: moveResult.destinationTasks,
+      };
     }
 
     setColumns(newColumns);
-
-    let newOrder = 1000;
-    if (destTasks.length > 1) {
-      if (destination.index === 0) {
-        newOrder = destTasks[1].order / 2;
-      } else if (destination.index === destTasks.length - 1) {
-        newOrder = destTasks[destTasks.length - 2].order + 1000;
-      } else {
-        newOrder =
-          (destTasks[destination.index - 1].order +
-            destTasks[destination.index + 1].order) /
-          2;
-      }
-    }
 
     try {
       setSavingTaskColumnId(destinationColumnId);
@@ -1776,7 +1782,7 @@ export function BoardWorkspace({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           column_id: destinationColumnId,
-          order: newOrder,
+          order: moveResult.newOrder,
         }),
       });
 
@@ -2236,17 +2242,18 @@ export function BoardWorkspace({
                         index={index}
                         isDragDisabled={isFiltering}
                       >
-                        {(taskProvided, taskSnapshot) => (
+                        {(taskProvided, taskSnapshot) => renderDraggingCard(
                           <article
                             ref={taskProvided.innerRef}
                             {...taskProvided.draggableProps}
+                            {...taskProvided.dragHandleProps}
                             onClick={() => {
                               setTaskComments([]);
                               setTaskAttachments([]);
                               setSelectedTaskId(task.id);
                             }}
                             className={`tm-tray-draft border p-3 ${
-                              taskSnapshot.isDragging ? "shadow-xl ring-2 ring-blue-400" : ""
+                              taskSnapshot.isDragging ? "tm-dragging-card shadow-xl ring-2 ring-blue-400" : ""
                             }`}
                           >
                             <div className="flex items-start gap-3">
@@ -2264,21 +2271,18 @@ export function BoardWorkspace({
                                   </span>
                                 </div>
                               </div>
-                              <button
-                                type="button"
-                                {...taskProvided.dragHandleProps}
-                                onClick={(event) => event.stopPropagation()}
+                              <span
                                 className="tm-task-drag-handle border border-blue-200 px-1.5 py-1 text-[10px] font-black text-blue-600 hover:bg-blue-50"
-                                aria-label={`Drag ${task.title}`}
+                                aria-hidden="true"
                               >
                                 ::
-                              </button>
+                              </span>
                             </div>
                             <p className="mt-3 text-[9px] font-black uppercase tracking-[0.16em] text-blue-600">
-                              Click to edit / drag handle to place
+                              Click to edit / drag card to place
                             </p>
                           </article>
-                        )}
+                        , taskSnapshot.isDragging)}
                       </Draggable>
                     ))}
                     {visibleIntakeTasks.length === 0 && (
@@ -2412,10 +2416,11 @@ export function BoardWorkspace({
                                   index={index}
                                   isDragDisabled={isFiltering}
                                 >
-                                  {(provided, snapshot) => (
+                                  {(provided, snapshot) => renderDraggingCard(
                                     <article
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
                                       onClick={() => {
                                         setTaskComments([]);
                                         setTaskAttachments([]);
@@ -2423,7 +2428,7 @@ export function BoardWorkspace({
                                       }}
                                       className={`${taskCardClass} ${
                                         snapshot.isDragging
-                                          ? "shadow-lg ring-2 ring-blue-200"
+                                          ? "tm-dragging-card shadow-lg ring-2 ring-blue-200"
                                           : ""
                                       }`}
                                     >
@@ -2431,15 +2436,12 @@ export function BoardWorkspace({
                                         <span className="text-[9px] font-black uppercase tracking-[0.16em] text-blue-600">
                                           Work card
                                         </span>
-                                        <button
-                                          type="button"
-                                          {...provided.dragHandleProps}
-                                          onClick={(event) => event.stopPropagation()}
+                                        <span
                                           className="tm-task-drag-handle border border-blue-200 px-1.5 py-1 text-[10px] font-black text-blue-600 hover:bg-blue-50"
-                                          aria-label={`Drag ${task.title}`}
+                                          aria-hidden="true"
                                         >
                                           ::
-                                        </button>
+                                        </span>
                                       </div>
                                       <p className={`text-sm font-medium leading-5 ${embedded ? "text-slate-900" : "text-slate-900"}`}>{task.title}</p>
                                       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -2478,7 +2480,7 @@ export function BoardWorkspace({
                                         )}
                                       </div>
                                     </article>
-                                  )}
+                                  , snapshot.isDragging)}
                                 </Draggable>
                               ))}
                               {column.tasks.length === 0 && (
