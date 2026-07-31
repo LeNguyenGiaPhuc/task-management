@@ -1849,10 +1849,11 @@ export function BoardWorkspace({
   const inputClass = "tm-input h-9 border px-3 text-sm text-slate-900 outline-none";
   const smallInputClass = "tm-input min-w-0 flex-1 border px-2 py-1.5 text-sm text-slate-900 outline-none";
   const innerCardClass = "rounded-md border border-slate-200 bg-white/80 px-3 py-2";
+  const reportMetricClass = "tm-report-metric border px-3 py-3";
   const columnClass = "tm-work-desk flex max-h-[620px] min-w-[360px] flex-col border";
   const taskCardClass = "tm-desk-task border p-3";
   const addColumnClass = "tm-add-desk min-w-[300px] self-start border p-4";
-  const reportPanelClass = "tm-panel p-4";
+  const reportPanelClass = "tm-report-panel border p-4";
   const summaryCards = [
     {
       label: "Waiting in Intake",
@@ -2589,12 +2590,44 @@ export function BoardWorkspace({
         </main>
       </DragDropContext>
       ) : (
-        <main className={`${embedded ? "w-full" : "mx-auto max-w-7xl"} px-6 py-4`}>
+        <main className={`tm-report-room ${embedded ? "w-full" : "mx-auto max-w-7xl"} px-3 py-4 sm:px-6 sm:py-5`}>
+          <header className="tm-report-room-header mb-4 flex flex-col gap-5 border p-4 text-white sm:p-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <span className="h-2 w-2 bg-lime-300" />
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-lime-300">
+                  MartinDesk / Signal room 02
+                </p>
+              </div>
+              <h1 className="mt-2 text-2xl font-black uppercase tracking-tight sm:text-3xl">
+                Workspace intelligence
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm text-blue-100/80">
+                Read workload, flow, risk, and archived work without leaving the active workspace.
+              </p>
+            </div>
+            <div className="grid w-full grid-cols-3 border border-blue-400/30 lg:w-auto">
+              <div className="tm-report-header-stat">
+                <span>Intake</span>
+                <strong>{displayIntakeTasks}</strong>
+              </div>
+              <div className="tm-report-header-stat">
+                <span>Urgent</span>
+                <strong>{displayUrgentTasks}</strong>
+              </div>
+              <div className="tm-report-header-stat">
+                <span>Overdue</span>
+                <strong>{displayOverdueTasks}</strong>
+              </div>
+            </div>
+          </header>
+
           <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
             <section className={reportPanelClass}>
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">Work overview</h2>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">Signal 01 / Flow</p>
+                  <h2 className="mt-1 text-base font-black uppercase tracking-wide text-slate-950">Work overview</h2>
                   <p className="text-sm text-slate-500">
                     Distribution by column and current completion status.
                   </p>
@@ -2605,22 +2638,22 @@ export function BoardWorkspace({
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className={innerCardClass}>
+                <div className={reportMetricClass}>
                   <p className="text-xs font-medium text-slate-500">Waiting in Intake</p>
                   <p className="mt-2 text-2xl font-bold text-blue-700">{displayIntakeTasks}</p>
                   <p className="mt-1 text-xs text-slate-500">Not placed on a desk yet</p>
                 </div>
-                <div className={innerCardClass}>
+                <div className={reportMetricClass}>
                   <p className="text-xs font-medium text-slate-500">Total tasks</p>
                   <p className="mt-2 text-2xl font-bold text-slate-900">{displayTotalTasks}</p>
                   <p className="mt-1 text-xs text-slate-500">{displayOpenTasks} open / {displayDoneTasks} done</p>
                 </div>
-                <div className={innerCardClass}>
+                <div className={reportMetricClass}>
                   <p className="text-xs font-medium text-slate-500">Completion</p>
                   <p className="mt-2 text-2xl font-bold text-slate-900">{displayCompletionRate}%</p>
                   <p className="mt-1 text-xs text-slate-500">{displayChecklistRate}% checklist progress</p>
                 </div>
-                <div className={innerCardClass}>
+                <div className={reportMetricClass}>
                   <p className="text-xs font-medium text-slate-500">Risk</p>
                   <p className={`mt-2 text-2xl font-bold ${displayOverdueTasks > 0 ? "text-red-600" : "text-slate-900"}`}>
                     {displayOverdueTasks}
@@ -2640,9 +2673,9 @@ export function BoardWorkspace({
                         {column.count} tasks / {column.percent}%
                       </span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                    <div className="tm-report-track h-2 overflow-hidden bg-slate-200">
                       <div
-                        className="h-full rounded-full bg-blue-600"
+                        className="h-full bg-blue-600"
                         style={{ width: `${column.percent}%` }}
                       />
                     </div>
@@ -2652,7 +2685,8 @@ export function BoardWorkspace({
             </section>
 
             <section className={reportPanelClass}>
-              <h2 className="text-base font-bold text-slate-900">Member workload</h2>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">Signal 02 / Crew</p>
+              <h2 className="mt-1 text-base font-black uppercase tracking-wide text-slate-950">Member workload</h2>
               <p className="mb-4 text-sm text-slate-500">
                 Assigned work and risk by member.
               </p>
@@ -2660,7 +2694,7 @@ export function BoardWorkspace({
                 {displayMemberReport.length > 0 ? (
                   displayMemberReport.map((member) => {
                     return (
-                      <div key={member.id} className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                      <div key={member.id} className="tm-report-row border p-3">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-slate-900">{member.name}</p>
@@ -2668,8 +2702,8 @@ export function BoardWorkspace({
                           </div>
                           <p className="shrink-0 text-sm font-bold text-slate-900">{member.count}</p>
                         </div>
-                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
-                          <div className="h-full rounded-full bg-slate-700" style={{ width: `${member.percent}%` }} />
+                        <div className="tm-report-track mt-2 h-1.5 overflow-hidden bg-slate-200">
+                          <div className="h-full bg-slate-700" style={{ width: `${member.percent}%` }} />
                         </div>
                         <p className="mt-2 text-xs text-slate-500">
                           {member.urgentCount} urgent / {member.overdueCount} overdue
@@ -2688,7 +2722,8 @@ export function BoardWorkspace({
 
           <div className="mt-4 grid gap-4 xl:grid-cols-2">
             <section className={reportPanelClass}>
-              <h2 className="text-base font-bold text-slate-900">Priority breakdown</h2>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">Signal 03 / Pressure</p>
+              <h2 className="mt-1 text-base font-black uppercase tracking-wide text-slate-950">Priority breakdown</h2>
               <div className="mt-4 grid gap-3">
                 {displayPriorityReport.map((item) => {
                   return (
@@ -2699,8 +2734,8 @@ export function BoardWorkspace({
                         </span>
                         <span className="text-slate-500">{item.count} tasks</span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                        <div className="h-full rounded-full bg-slate-700" style={{ width: `${item.percent}%` }} />
+                      <div className="tm-report-track h-2 overflow-hidden bg-slate-200">
+                        <div className="h-full bg-slate-700" style={{ width: `${item.percent}%` }} />
                       </div>
                     </div>
                   );
@@ -2709,7 +2744,8 @@ export function BoardWorkspace({
             </section>
 
             <section className={reportPanelClass}>
-              <h2 className="text-base font-bold text-slate-900">Type breakdown</h2>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">Signal 04 / Classification</p>
+              <h2 className="mt-1 text-base font-black uppercase tracking-wide text-slate-950">Type breakdown</h2>
               <div className="mt-4 grid gap-3">
                 {displayTypeReport.map((item) => {
                   return (
@@ -2720,8 +2756,8 @@ export function BoardWorkspace({
                         </span>
                         <span className="text-slate-500">{item.count} tasks</span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                        <div className="h-full rounded-full bg-blue-600" style={{ width: `${item.percent}%` }} />
+                      <div className="tm-report-track h-2 overflow-hidden bg-slate-200">
+                        <div className="h-full bg-blue-600" style={{ width: `${item.percent}%` }} />
                       </div>
                     </div>
                   );
@@ -2733,7 +2769,8 @@ export function BoardWorkspace({
           <section className={`${reportPanelClass} mt-4`}>
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-bold text-slate-900">Overdue tasks</h2>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-600">Alert queue / Due control</p>
+                <h2 className="mt-1 text-base font-black uppercase tracking-wide text-slate-950">Overdue tasks</h2>
                 <p className="text-sm text-slate-500">Tasks past their due date.</p>
               </div>
               <span className="rounded bg-red-50 px-2 py-1 text-xs font-bold text-red-700 ring-1 ring-red-200">
@@ -2752,7 +2789,7 @@ export function BoardWorkspace({
                       setTaskAttachments([]);
                       setSelectedTaskId(task.id);
                     }}
-                    className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-left hover:bg-white"
+                    className="tm-report-row flex items-center justify-between gap-3 border px-3 py-2 text-left hover:bg-white"
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-slate-900">{task.title}</span>
@@ -2781,7 +2818,8 @@ export function BoardWorkspace({
           <section className={`${reportPanelClass} mt-4`}>
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-bold text-slate-900">Archived tasks</h2>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">Cold storage / Recovery</p>
+                <h2 className="mt-1 text-base font-black uppercase tracking-wide text-slate-950">Archived tasks</h2>
                 <p className="text-sm text-slate-500">Restore archived work items back to the board.</p>
               </div>
               <span className="rounded bg-slate-100 px-2 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200">
@@ -2794,7 +2832,7 @@ export function BoardWorkspace({
                 {archivedTaskList.slice(0, 8).map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+                    className="tm-report-row flex items-center justify-between gap-3 border px-3 py-2"
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-slate-900">{task.title}</span>

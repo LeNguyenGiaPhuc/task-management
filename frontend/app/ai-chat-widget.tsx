@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { apiFetch, getAuthToken } from "./api";
 
@@ -152,6 +152,8 @@ export default function AiChatWidget() {
   const [activeBoardId, setActiveBoardId] = useState("");
   const boardId = boardIdFromPath || activeBoardId;
   const [isOpen, setIsOpen] = useState(false);
+  const [isDockExpanded, setIsDockExpanded] = useState(false);
+  const dockRef = useRef<HTMLButtonElement>(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -167,7 +169,10 @@ export default function AiChatWidget() {
     const syncAuthentication = () => {
       const authenticated = Boolean(getAuthToken());
       setIsAuthenticated(authenticated);
-      if (!authenticated) setIsOpen(false);
+      if (!authenticated) {
+        setIsOpen(false);
+        setIsDockExpanded(false);
+      }
     };
 
     syncAuthentication();
@@ -181,7 +186,12 @@ export default function AiChatWidget() {
   useEffect(() => {
     const handleActiveBoardChange = (event: Event) => {
       const customEvent = event as CustomEvent<{ boardId?: string }>;
-      setActiveBoardId(customEvent.detail?.boardId || "");
+      const nextBoardId = customEvent.detail?.boardId || "";
+      setActiveBoardId(nextBoardId);
+      if (!nextBoardId && !boardIdFromPath) {
+        setIsOpen(false);
+        setIsDockExpanded(false);
+      }
     };
 
     window.addEventListener("task-manager:active-board-changed", handleActiveBoardChange);
@@ -189,7 +199,28 @@ export default function AiChatWidget() {
     return () => {
       window.removeEventListener("task-manager:active-board-changed", handleActiveBoardChange);
     };
-  }, []);
+  }, [boardIdFromPath]);
+
+  useEffect(() => {
+    if (!isDockExpanded || isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (dockRef.current?.contains(event.target as Node)) return;
+      setIsDockExpanded(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsDockExpanded(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isDockExpanded, isOpen]);
 
   const sendMessage = async (content: string) => {
     const trimmedContent = content.trim();
@@ -316,7 +347,7 @@ export default function AiChatWidget() {
   return (
     <>
       {isOpen && (
-        <section className="tm-ai-panel tm-slide-up fixed bottom-32 right-5 z-[120] flex h-[min(760px,calc(100vh-160px))] w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden border bg-white text-slate-900">
+        <section className="tm-ai-panel tm-slide-up fixed bottom-4 right-4 z-[120] flex h-[min(760px,calc(100vh-32px))] w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden border bg-white text-slate-900">
           <header className="flex items-start justify-between gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-950 to-blue-950 px-4 py-3 text-white">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-200">
@@ -441,28 +472,40 @@ export default function AiChatWidget() {
         </section>
       )}
 
-      <button
-        type="button"
-        onClick={() => setIsOpen((currentValue) => !currentValue)}
-        className="tm-martin-terminal fixed bottom-4 right-5 z-[120] text-left"
-        aria-label="Open AI assistant"
-        aria-expanded={isOpen}
-      >
-        <span className="tm-martin-terminal-shell block">
-          <span className="tm-martin-screen block">
-            <span className="block text-[8px] font-black tracking-[0.12em] text-blue-300">
-              ASK MARTIN
+      {!isOpen && (
+        <button
+          ref={dockRef}
+          type="button"
+          onClick={() => {
+            if (!isDockExpanded) {
+              setIsDockExpanded(true);
+              return;
+            }
+            setIsOpen(true);
+            setIsDockExpanded(false);
+          }}
+          className={`tm-martin-terminal tm-martin-edge-terminal fixed bottom-4 right-0 z-[120] text-left ${
+            isDockExpanded ? "is-expanded" : ""
+          }`}
+          aria-label={isDockExpanded ? "Open Martin AI chat" : "Show Martin AI terminal"}
+          aria-expanded={isDockExpanded}
+        >
+          <span className="tm-martin-terminal-shell block">
+            <span className="tm-martin-screen block">
+              <span className="block text-[8px] font-black tracking-[0.12em] text-blue-300">
+                ASK MARTIN
+              </span>
+              <span className="mt-1 block text-[7px] font-bold text-blue-200">
+                {isSending ? "THINKING..." : "READY >_"}
+              </span>
             </span>
-            <span className="mt-1 block text-[7px] font-bold text-blue-200">
-              {isSending ? "THINKING..." : isOpen ? "ONLINE" : "READY >_"}
+            <span className="tm-martin-console flex items-center justify-between">
+              <span className="tm-martin-grille" />
+              <span className="tm-martin-key" />
             </span>
           </span>
-          <span className="tm-martin-console flex items-center justify-between">
-            <span className="tm-martin-grille" />
-            <span className="tm-martin-key" />
-          </span>
-        </span>
-      </button>
+        </button>
+      )}
     </>
   );
 }
