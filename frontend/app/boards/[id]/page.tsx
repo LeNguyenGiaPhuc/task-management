@@ -428,25 +428,66 @@ function TaskDetailModal({
   };
 
   return (
-    <div className="tm-modal-backdrop fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div className="tm-modal tm-pop-in max-h-[92vh] w-full max-w-3xl overflow-y-auto bg-white p-5">
-        <div className="mb-5 flex items-start justify-between gap-4">
+    <div className="tm-modal-backdrop tm-inspector-backdrop fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="tm-modal tm-task-inspector tm-pop-in max-h-[92vh] w-full max-w-5xl overflow-y-auto">
+        <header className="tm-task-inspector-header sticky top-0 z-10 flex items-start justify-between gap-4 border-b px-5 py-4 sm:px-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Task detail
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-lime-300">
+                Work card inspector
+              </p>
+              <span className="border border-blue-400/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-blue-200">
+                ID / {task.id.slice(0, 8)}
+              </span>
+            </div>
+            <h2 className="mt-2 text-xl font-black tracking-tight text-white sm:text-2xl">
+              {task.title}
+            </h2>
+            <p className="mt-1 text-xs text-slate-400">
+              Inspect the signal, update the card, then return it to the floor.
             </p>
-            <h2 className="mt-1 text-xl font-bold text-slate-950">{task.title}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="tm-button-secondary px-3 py-1.5 text-sm font-medium text-slate-500"
+            className="tm-inspector-close border border-lime-300 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-lime-300"
           >
-            Close
+            Close ×
           </button>
-        </div>
+        </header>
 
-        <form onSubmit={handleSave} className="grid gap-4">
+        <div className="tm-task-inspector-body p-5 sm:p-6">
+          <div className="tm-inspector-status mb-5 grid grid-cols-2 border sm:grid-cols-4">
+            <div>
+              <span>Signal</span>
+              <strong>{priority}</strong>
+            </div>
+            <div>
+              <span>Card type</span>
+              <strong>{taskType}</strong>
+            </div>
+            <div>
+              <span>Checklist</span>
+              <strong>{completedCount}/{task.sub_tasks?.length || 0}</strong>
+            </div>
+            <div>
+              <span>Attachments</span>
+              <strong>{attachments.length}</strong>
+            </div>
+          </div>
+
+        <form onSubmit={handleSave} className="tm-inspector-section grid gap-4 border p-4 sm:p-5">
+          <div className="flex items-center justify-between border-b border-blue-100 pb-3">
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">
+                Section 01
+              </p>
+              <h3 className="mt-1 text-sm font-black uppercase tracking-wide text-slate-950">
+                Card coordinates
+              </h3>
+            </div>
+            <span className="h-2 w-2 bg-lime-400" />
+          </div>
           <label>
             <span className="mb-1 block text-sm font-medium text-slate-700">Title</span>
             <input
@@ -538,13 +579,13 @@ function TaskDetailModal({
             </label>
           </div>
 
-          <div className="flex flex-col justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row">
+          <div className="tm-inspector-actions flex flex-col justify-between gap-3 border-t border-slate-200 pt-4 sm:flex-row">
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="rounded-md bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="tm-inspector-danger border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isDeleting ? "Archiving" : "Archive"}
               </button>
@@ -552,7 +593,7 @@ function TaskDetailModal({
                 type="button"
                 onClick={handleDuplicate}
                 disabled={isDuplicating}
-                className="rounded-md bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="tm-button-secondary px-4 py-2 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isDuplicating ? "Copying" : "Duplicate"}
               </button>
@@ -567,10 +608,11 @@ function TaskDetailModal({
           </div>
         </form>
 
-        <section className="mt-6 border-t border-slate-200 pt-5">
+        <section className="tm-inspector-section mt-4 border p-4 sm:p-5">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="font-bold text-slate-950">Checklist</h3>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">Section 02</p>
+              <h3 className="mt-1 font-black uppercase tracking-wide text-slate-950">Execution checklist</h3>
               <p className="text-xs text-slate-500">
                 {completedCount}/{task.sub_tasks?.length || 0} completed
               </p>
@@ -632,11 +674,14 @@ function TaskDetailModal({
           </form>
         </section>
 
-        <section className="mt-6 grid gap-5 border-t border-slate-200 pt-5 md:grid-cols-2">
-          <div>
+        <section className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="tm-inspector-section border p-4 sm:p-5">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h3 className="font-bold text-slate-950">Comments</h3>
-              <span className="text-sm text-slate-500">{comments.length}</span>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">Section 03</p>
+                <h3 className="mt-1 font-black uppercase tracking-wide text-slate-950">Signal log</h3>
+              </div>
+              <span className="border border-blue-200 px-2 py-1 text-xs font-black text-blue-700">{comments.length}</span>
             </div>
 
             <form onSubmit={handleCreateComment} className="mb-3 grid gap-2">
@@ -689,10 +734,13 @@ function TaskDetailModal({
             </div>
           </div>
 
-          <div>
+          <div className="tm-inspector-section border p-4 sm:p-5">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h3 className="font-bold text-slate-950">Attachments</h3>
-              <span className="text-sm text-slate-500">{attachments.length}</span>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">Section 04</p>
+                <h3 className="mt-1 font-black uppercase tracking-wide text-slate-950">Evidence bay</h3>
+              </div>
+              <span className="border border-blue-200 px-2 py-1 text-xs font-black text-blue-700">{attachments.length}</span>
             </div>
 
             <form onSubmit={handleCreateAttachment} className="mb-3 grid gap-2">
@@ -757,6 +805,7 @@ function TaskDetailModal({
             </div>
           </div>
         </section>
+        </div>
       </div>
     </div>
   );

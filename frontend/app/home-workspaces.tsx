@@ -453,15 +453,15 @@ export default function HomeWorkspaces() {
   }
 
   return (
-    <main className="tm-shell tm-dashboard-shell min-h-screen text-slate-900">
+    <main className="tm-shell tm-dashboard-shell tm-directory-shell min-h-screen text-slate-900">
       <div className={`grid min-h-screen ${selectedBoard ? "grid-cols-1" : "md:grid-cols-[240px_1fr]"}`}>
         {!selectedBoard && (
-          <aside className="tm-sidebar sticky top-0 hidden h-screen overflow-y-auto border-r px-3 py-4 md:block">
+          <aside className="tm-sidebar tm-directory-sidebar sticky top-0 hidden h-screen overflow-y-auto border-r px-3 py-4 md:block">
           <div className="tm-sidebar-brand mb-4 flex items-center gap-3">
-            <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">MD</span>
+            <span className="tm-brand-mark tm-directory-mark flex h-9 w-9 items-center justify-center text-[11px] font-black text-white">MD</span>
             <div className="min-w-0">
               <p className="truncate text-sm font-black tracking-tight text-slate-950">MartinDesk</p>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">Your workspace</p>
+              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-500">Workspace directory</p>
             </div>
           </div>
           <nav className="grid gap-1 text-sm">
@@ -481,9 +481,9 @@ export default function HomeWorkspaces() {
                       }
                       setSelectedBoardId(null);
                     }}
-                    className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left font-medium transition ${
+                    className={`tm-directory-nav-item flex w-full items-center justify-between px-3 py-2 text-left font-bold transition ${
                       isActive
-                        ? "bg-blue-50 text-blue-700 shadow-sm"
+                        ? "is-active bg-blue-50 text-blue-700 shadow-sm"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
@@ -503,13 +503,13 @@ export default function HomeWorkspaces() {
                               setIsSpacesOpen(true);
                               setSelectedBoardId(board.id);
                             }}
-                            className={`flex items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium transition ${
+                            className={`tm-directory-space-link flex items-center gap-2 px-3 py-2 text-left text-xs font-bold transition ${
                               selectedBoardId === board.id
                                 ? "bg-blue-100 text-blue-800 shadow-sm"
                                 : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
                             }`}
                           >
-                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-slate-200 text-[10px] font-bold text-slate-700">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center border border-blue-200 bg-white text-[9px] font-black text-blue-700">
                               P{index + 1}
                             </span>
                             <span className="min-w-0 flex-1 truncate">{board.title}</span>
@@ -541,7 +541,7 @@ export default function HomeWorkspaces() {
                     setIsSpacesOpen(true);
                     setSelectedBoardId(board.id);
                   }}
-                  className="truncate rounded-md px-3 py-2 text-left text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  className="tm-directory-recent truncate px-3 py-2 text-left text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 >
                   {board.title}
                 </button>
@@ -552,7 +552,7 @@ export default function HomeWorkspaces() {
         )}
 
         <section className="min-w-0">
-          <header className="tm-topbar sticky top-0 z-20 border-b px-5 py-3">
+          <header className="tm-topbar tm-directory-topbar sticky top-0 z-20 border-b px-5 py-3">
             {selectedBoard ? (
               <div className="flex min-h-9 flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -591,17 +591,20 @@ export default function HomeWorkspaces() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="md:hidden">
-                    <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">MD</span>
+                    <span className="tm-brand-mark flex h-9 w-9 items-center justify-center text-[11px] font-black text-white">MD</span>
                   </div>
                   <div className="min-w-0 flex-1">
+                    <p className="mb-1 text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">
+                      Directory search
+                    </p>
                     <input
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Search boards"
-                      className="tm-input h-9 w-full max-w-2xl border px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                      placeholder="Find a workspace by name"
+                      className="tm-input h-9 w-full max-w-2xl border px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 xl:w-[480px]"
                     />
                   </div>
                 </div>
@@ -633,7 +636,7 @@ export default function HomeWorkspaces() {
             )}
           </header>
 
-          <div className="px-5 py-5">
+          <div className={`px-5 py-5 ${selectedBoard ? "" : "tm-directory-content"}`}>
             {selectedBoard ? (
               <div className="-mx-5 -my-5 min-h-[calc(100vh-65px)]">
                 <BoardWorkspace
@@ -644,39 +647,44 @@ export default function HomeWorkspaces() {
               </div>
             ) : (
               <>
-            <div className="tm-dashboard-hero mb-6 p-6 text-white sm:p-7">
+            <div className="tm-dashboard-hero tm-directory-hero mb-6 p-6 text-white sm:p-7">
               <div className="relative z-[1] flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">Good to see you again</p>
+                  <div className="flex items-center gap-3">
+                    <span className="h-2 w-2 bg-lime-300" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-lime-300">
+                      Control room / Directory 01
+                    </p>
+                  </div>
                   <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-                    {currentUser.name.split(" ")[0]}&apos;s workspace
+                    {currentUser.name.split(" ")[0]}&apos;s work floor
                   </h1>
                   <p className="mt-2 max-w-xl text-sm leading-6 text-blue-100/85">
-                    Keep priorities visible, give your team room to move, and turn every board into measurable progress.
+                    Every workspace is a room. Open one to move cards, inspect signals, and keep the work visible.
                   </p>
                 </div>
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                  <div className="tm-dashboard-stat rounded-xl px-3 py-2.5 sm:min-w-24">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-blue-100">Boards</p>
+                  <div className="tm-dashboard-stat tm-directory-stat px-3 py-2.5 sm:min-w-24">
+                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-blue-100">Rooms</p>
                     <p className="mt-1 text-xl font-black">{displayWorkspaceBoards}</p>
                   </div>
-                  <div className="tm-dashboard-stat rounded-xl px-3 py-2.5 sm:min-w-24">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-blue-100">Tasks</p>
+                  <div className="tm-dashboard-stat tm-directory-stat px-3 py-2.5 sm:min-w-24">
+                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-blue-100">Cards</p>
                     <p className="mt-1 text-xl font-black">{displayWorkspaceTasks}</p>
                   </div>
-                  <div className="tm-dashboard-stat rounded-xl px-3 py-2.5 sm:min-w-24">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-blue-100">Done</p>
+                  <div className="tm-dashboard-stat tm-directory-stat px-3 py-2.5 sm:min-w-24">
+                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-blue-100">Cleared</p>
                     <p className="mt-1 text-xl font-black">{workspaceSummary?.done_tasks ?? 0}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="tm-directory-toolbar mb-5 flex flex-col gap-3 border p-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Spaces</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Workspace nodes</p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {displayWorkspaceBoards} boards / {displayWorkspaceColumns} columns / {displayWorkspaceTasks} tasks
+                  {displayWorkspaceBoards} rooms / {displayWorkspaceColumns} desks / {displayWorkspaceTasks} cards
                 </p>
               </div>
               <select
@@ -720,10 +728,10 @@ export default function HomeWorkspaces() {
 
             {filteredBoards.length > 0 ? (
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-                {filteredBoards.map((board) => (
+                {filteredBoards.map((board, boardIndex) => (
                   <article
                     key={board.id}
-                    className="tm-card tm-fade-in"
+                    className="tm-card tm-directory-card tm-fade-in"
                   >
                     <button
                       type="button"
@@ -734,17 +742,20 @@ export default function HomeWorkspaces() {
                       }}
                       className="block w-full p-4 text-left"
                     >
-                      <div className="mb-3 flex items-start justify-between gap-3">
+                      <div className="mb-4 flex items-start justify-between gap-3 border-b border-blue-100 pb-3">
                         <div className="min-w-0">
-                          <h2 className="truncate text-base font-semibold text-slate-900" title={board.title}>
+                          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-600">
+                            Workspace node / {String(boardIndex + 1).padStart(2, "0")}
+                          </p>
+                          <h2 className="mt-1 truncate text-lg font-black uppercase tracking-wide text-slate-950" title={board.title}>
                             {board.title}
                           </h2>
                           <p className="mt-1 text-xs text-slate-500">
                             Updated {formatDate(board.updated_at)}
                           </p>
                         </div>
-                        <span className="rounded bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
-                          Active
+                        <span className="border border-lime-300 bg-lime-50 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-lime-700">
+                          Online
                         </span>
                       </div>
 
@@ -752,23 +763,29 @@ export default function HomeWorkspaces() {
                         {board.description || "No description"}
                       </p>
 
-                      <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                        <div className="rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2">
-                          <p className="text-xs text-slate-500">Columns</p>
-                          <p className="mt-1 font-semibold text-slate-900">
+                      <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+                        <div className="tm-directory-metric border px-3 py-2">
+                          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Desks</p>
+                          <p className="mt-1 font-black text-slate-950">
                             {(board.columns || []).filter((column) => !column.is_intake).length}
                           </p>
                         </div>
-                        <div className="rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2">
-                          <p className="text-xs text-slate-500">Tasks</p>
-                          <p className="mt-1 font-semibold text-slate-900">{getTaskCount(board)}</p>
+                        <div className="tm-directory-metric border px-3 py-2">
+                          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Cards</p>
+                          <p className="mt-1 font-black text-slate-950">{getTaskCount(board)}</p>
+                        </div>
+                        <div className="tm-directory-metric border px-3 py-2">
+                          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Intake</p>
+                          <p className="mt-1 font-black text-slate-950">
+                            {(board.columns || []).find((column) => column.is_intake)?.tasks?.length || 0}
+                          </p>
                         </div>
                       </div>
                     </button>
 
-                    <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-4 py-3">
-                      <span className="text-xs text-slate-500">
-                        Created {formatDate(board.created_at)}
+                    <div className="tm-directory-card-footer flex items-center justify-between gap-2 border-t border-slate-200 px-4 py-3">
+                      <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-slate-500">
+                        Node online / {formatDate(board.created_at)}
                       </span>
                       <div className="flex gap-1">
                         <button
