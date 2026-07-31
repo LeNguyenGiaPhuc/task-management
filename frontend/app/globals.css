@@ -463,6 +463,23 @@ button:disabled {
     rgba(248, 251, 255, 0.95);
 }
 
+.tm-account-trigger {
+  box-shadow: 4px 4px 0 rgba(37, 99, 235, 0.09);
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.tm-account-trigger:hover {
+  border-color: #60a5fa;
+  box-shadow: 5px 5px 0 rgba(37, 99, 235, 0.14);
+  transform: translate(-1px, -1px);
+}
+
+.tm-account-menu {
+  box-shadow:
+    7px 8px 0 rgba(37, 99, 235, 0.12),
+    0 20px 44px rgba(15, 23, 42, 0.14);
+}
+
 .tm-directory-content {
   min-height: calc(100vh - 65px);
 }
@@ -519,6 +536,48 @@ button:disabled {
     9px 10px 0 #bdd4f2,
     0 22px 42px rgba(30, 64, 175, 0.14);
   transform: translate(-1px, -1px);
+}
+
+.tm-directory-card.is-archived {
+  background:
+    linear-gradient(90deg, rgba(148, 163, 184, 0.30) 0 5px, transparent 5px),
+    #f8fafc;
+  filter: saturate(0.76);
+}
+
+.tm-directory-create-card {
+  border-color: #60a5fa;
+  background:
+    linear-gradient(rgba(37, 99, 235, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.055) 1px, transparent 1px),
+    rgba(248, 251, 255, 0.74);
+  background-size: 24px 24px, 24px 24px, auto;
+  box-shadow:
+    7px 8px 0 rgba(37, 99, 235, 0.08),
+    inset 5px 0 0 rgba(190, 242, 100, 0.72);
+  transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.tm-directory-create-card:hover {
+  border-color: #2563eb;
+  background:
+    linear-gradient(rgba(37, 99, 235, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.075) 1px, transparent 1px),
+    #ffffff;
+  background-size: 24px 24px, 24px 24px, auto;
+  box-shadow:
+    9px 10px 0 rgba(37, 99, 235, 0.13),
+    inset 5px 0 0 #bef264;
+  transform: translate(-1px, -1px);
+}
+
+.tm-directory-actions > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tm-directory-actions[open] > summary {
+  border-color: #2563eb;
+  background: #eff6ff;
 }
 
 .tm-directory-metric {

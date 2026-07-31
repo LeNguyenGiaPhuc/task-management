@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_BASE_URL, apiFetch, clearAuthToken, setAuthToken, type AuthUser } from "./api";
 import { BoardWorkspace } from "./boards/[id]/page";
@@ -13,6 +13,26 @@ type BoardColumnSummary = {
   tasks?: { id: string }[];
 };
 
+type BoardMemberPreview = {
+  user_id: string;
+  users: {
+    id: string;
+    email: string;
+    name: string;
+    avatar_url?: string | null;
+  };
+};
+
+type BoardActivityPreview = {
+  id: string;
+  action_text: string;
+  created_at?: string | null;
+  users?: {
+    id: string;
+    name: string;
+  } | null;
+};
+
 export type HomeBoard = {
   id: string;
   title: string;
@@ -22,6 +42,21 @@ export type HomeBoard = {
   created_at?: string | null;
   updated_at?: string | null;
   columns?: BoardColumnSummary[];
+  board_members?: BoardMemberPreview[];
+  activity_logs?: BoardActivityPreview[];
+};
+
+type WorkspaceBoardAnalytics = {
+  id: string;
+  title: string;
+  health_status: "NEEDS_ATTENTION" | "HIGH_PRIORITY" | "ON_TRACK";
+  health_label: string;
+  total_tasks: number;
+  open_tasks: number;
+  done_tasks: number;
+  overdue_tasks: number;
+  urgent_tasks: number;
+  completion_rate: number;
 };
 
 type WorkspaceAnalytics = {
@@ -40,13 +75,12 @@ type WorkspaceAnalytics = {
     completion_rate: number;
     checklist_completion_rate: number;
   };
+  boards: WorkspaceBoardAnalytics[];
 };
 
 type SortMode = "recent" | "updated" | "az" | "za";
 type AuthMode = "login" | "register";
-type SidebarItem = "Spaces";
-
-const sidebarItems: SidebarItem[] = ["Spaces"];
+type DirectoryFilter = "ALL" | "ACTIVE" | "ARCHIVED";
 
 function getTaskCount(board: HomeBoard) {
   return (board.columns || []).reduce(
@@ -57,11 +91,138 @@ function getTaskCount(board: HomeBoard) {
 
 function formatDate(value?: string | null) {
   if (!value) return "No date";
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function formatRelativeTime(value?: string | null) {
+  if (!value) return "No recent activity";
+
+  const difference = Date.now() - new Date(value).getTime();
+  const minutes = Math.max(Math.floor(difference / 60000), 0);
+
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+
+  return formatDate(value);
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function getWorkspaceHealth(
+  board: HomeBoard,
+  analytics?: WorkspaceBoardAnalytics
+) {
+  if (board.archived_at) {
+    return {
+      label: "Archived",
+      className: "border-slate-300 bg-slate-100 text-slate-600",
+    };
+  }
+
+  if (analytics?.health_status === "NEEDS_ATTENTION") {
+    return {
+      label: "At risk",
+      className: "border-red-300 bg-red-50 text-red-700",
+    };
+  }
+
+  if (analytics?.health_status === "HIGH_PRIORITY") {
+    return {
+      label: "High priority",
+      className: "border-orange-300 bg-orange-50 text-orange-700",
+    };
+  }
+
+  return {
+    label: analytics?.health_label || "On track",
+    className: "border-lime-300 bg-lime-50 text-lime-700",
+  };
+}
+
+function AccountMenu({
+  user,
+  onLogout,
+}: {
+  user: AuthUser;
+  onLogout: () => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (menuRef.current?.contains(event.target as Node)) return;
+      setIsOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((currentValue) => !currentValue)}
+        className="tm-account-trigger flex h-10 items-center gap-2 border border-blue-200 bg-white px-2 text-left"
+        aria-label="Open account menu"
+        aria-expanded={isOpen}
+      >
+        <span className="flex h-7 w-7 items-center justify-center bg-slate-900 text-[10px] font-black text-white">
+          {getInitials(user.name)}
+        </span>
+        <span className="hidden min-w-0 sm:block">
+          <span className="block max-w-36 truncate text-xs font-bold text-slate-800">{user.name}</span>
+          <span className="block max-w-36 truncate text-[9px] text-slate-500">{user.email}</span>
+        </span>
+        <span className="hidden text-[9px] font-black text-blue-600 sm:block">{isOpen ? "▲" : "▼"}</span>
+      </button>
+
+      {isOpen && (
+        <div className="tm-account-menu absolute right-0 top-[calc(100%+8px)] z-50 w-64 border border-blue-200 bg-white p-3">
+          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-600">Active operator</p>
+          <p className="mt-2 truncate text-sm font-black text-slate-950">{user.name}</p>
+          <p className="truncate text-xs text-slate-500">{user.email}</p>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="mt-3 w-full border border-red-200 bg-red-50 px-3 py-2 text-left text-xs font-bold uppercase tracking-[0.12em] text-red-600 hover:bg-red-100"
+          >
+            Logout
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function getOAuthErrorMessage(authError: string | null) {
@@ -101,16 +262,20 @@ export default function HomeWorkspaces() {
   const [error, setError] = useState(getInitialAuthError);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [restoringBoardId, setRestoringBoardId] = useState<string | null>(null);
   const [duplicatingBoardId, setDuplicatingBoardId] = useState<string | null>(null);
-  const [activeSidebarItem, setActiveSidebarItem] = useState<SidebarItem>("Spaces");
-  const [isSpacesOpen, setIsSpacesOpen] = useState(true);
+  const [directoryFilter, setDirectoryFilter] = useState<DirectoryFilter>("ACTIVE");
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
 
   const filteredBoards = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const result = boards.filter((board) => {
+    const sourceBoards =
+      directoryFilter === "ACTIVE"
+        ? boards
+        : directoryFilter === "ARCHIVED"
+          ? archivedBoards
+          : [...boards, ...archivedBoards];
+    const result = sourceBoards.filter((board) => {
       if (!normalizedQuery) return true;
       return `${board.title} ${board.description || ""}`
         .toLowerCase()
@@ -131,7 +296,7 @@ export default function HomeWorkspaces() {
         new Date(a.created_at || 0).getTime()
       );
     });
-  }, [boards, query, sortMode]);
+  }, [archivedBoards, boards, directoryFilter, query, sortMode]);
 
   const totalTasks = boards.reduce((total, board) => total + getTaskCount(board), 0);
   const totalColumns = boards.reduce(
@@ -143,6 +308,33 @@ export default function HomeWorkspaces() {
   const displayWorkspaceBoards = workspaceSummary?.boards ?? boards.length;
   const displayWorkspaceColumns = workspaceSummary?.columns ?? totalColumns;
   const displayWorkspaceTasks = workspaceSummary?.total_tasks ?? totalTasks;
+  const boardAnalyticsById = useMemo(
+    () =>
+      new Map(
+        (workspaceAnalytics?.boards || []).map((boardAnalytics) => [
+          boardAnalytics.id,
+          boardAnalytics,
+        ])
+      ),
+    [workspaceAnalytics]
+  );
+  const recentBoards = useMemo(
+    () =>
+      [...boards]
+        .sort(
+          (a, b) =>
+            new Date(b.updated_at || 0).getTime() -
+            new Date(a.updated_at || 0).getTime()
+        )
+        .slice(0, 5),
+    [boards]
+  );
+  const directorySourceCount =
+    directoryFilter === "ACTIVE"
+      ? boards.length
+      : directoryFilter === "ARCHIVED"
+        ? archivedBoards.length
+        : boards.length + archivedBoards.length;
   const selectedBoard = useMemo(
     () => boards.find((board) => board.id === selectedBoardId) || null,
     [boards, selectedBoardId]
@@ -293,6 +485,12 @@ export default function HomeWorkspaces() {
     setArchivedBoards([]);
     setWorkspaceAnalytics(null);
     router.push("/");
+  };
+
+  const handleWorkspaceCreated = async (board: { id: string }) => {
+    await Promise.all([loadBoards(), loadWorkspaceAnalytics()]);
+    setDirectoryFilter("ACTIVE");
+    setSelectedBoardId(board.id);
   };
 
   const openEdit = (board: HomeBoard) => {
@@ -465,87 +663,57 @@ export default function HomeWorkspaces() {
             </div>
           </div>
           <nav className="grid gap-1 text-sm">
-            {sidebarItems.map((item) => {
-              const isActive = activeSidebarItem === item;
-
-              return (
-                <div key={item}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveSidebarItem(item);
-                      if (item === "Spaces") {
-                        setIsSpacesOpen(true);
-                        setSelectedBoardId(null);
-                        return;
-                      }
-                      setSelectedBoardId(null);
-                    }}
-                    className={`tm-directory-nav-item flex w-full items-center justify-between px-3 py-2 text-left font-bold transition ${
-                      isActive
-                        ? "is-active bg-blue-50 text-blue-700 shadow-sm"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
-                  >
-                    <span>{item}</span>
-                    {item === "Spaces" && <span className="text-xs text-blue-600">{boards.length}</span>}
-                  </button>
-
-                  {item === "Spaces" && activeSidebarItem === item && isSpacesOpen && (
-                    <div className="mt-1 grid gap-1 pl-3">
-                      {boards.length > 0 ? (
-                        boards.map((board, index) => (
-                          <button
-                            key={board.id}
-                            type="button"
-                            onClick={() => {
-                              setActiveSidebarItem("Spaces");
-                              setIsSpacesOpen(true);
-                              setSelectedBoardId(board.id);
-                            }}
-                            className={`tm-directory-space-link flex items-center gap-2 px-3 py-2 text-left text-xs font-bold transition ${
-                              selectedBoardId === board.id
-                                ? "bg-blue-100 text-blue-800 shadow-sm"
-                                : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                            }`}
-                          >
-                            <span className="flex h-6 w-6 shrink-0 items-center justify-center border border-blue-200 bg-white text-[9px] font-black text-blue-700">
-                              P{index + 1}
-                            </span>
-                            <span className="min-w-0 flex-1 truncate">{board.title}</span>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="rounded-md px-3 py-2 text-xs text-slate-500">
-                          No workspaces yet
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <p className="mb-1 px-3 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">
+              Workspaces
+            </p>
+            {([
+              { value: "ALL", label: "All", count: boards.length + archivedBoards.length },
+              { value: "ACTIVE", label: "Active", count: boards.length },
+              { value: "ARCHIVED", label: "Archived", count: archivedBoards.length },
+            ] as const).map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                onClick={() => {
+                  setDirectoryFilter(filter.value);
+                  setSelectedBoardId(null);
+                }}
+                className={`tm-directory-nav-item flex w-full items-center justify-between px-3 py-2 text-left font-bold transition ${
+                  directoryFilter === filter.value
+                    ? "is-active bg-blue-50 text-blue-700 shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <span>{filter.label}</span>
+                <span className="text-xs text-blue-600">{filter.count}</span>
+              </button>
+            ))}
           </nav>
 
           <div className="mt-8 border-t border-slate-200 pt-4">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Recent
+            <p className="px-3 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">
+              Recently opened
             </p>
             <div className="mt-2 grid gap-1">
-              {boards.slice(0, 5).map((board) => (
+              {recentBoards.map((board, index) => (
                 <button
                   key={board.id}
                   type="button"
                   onClick={() => {
-                    setActiveSidebarItem("Spaces");
-                    setIsSpacesOpen(true);
+                    setDirectoryFilter("ACTIVE");
                     setSelectedBoardId(board.id);
                   }}
-                  className="tm-directory-recent truncate px-3 py-2 text-left text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  className="tm-directory-recent flex items-center gap-2 px-3 py-2 text-left text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 >
-                  {board.title}
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center border border-blue-200 bg-white text-[9px] font-black text-blue-700">
+                    W{index + 1}
+                  </span>
+                  <span className="truncate">{board.title}</span>
                 </button>
               ))}
+              {recentBoards.length === 0 && (
+                <p className="px-3 py-2 text-xs text-slate-400">No recent workspaces</p>
+              )}
             </div>
           </div>
           </aside>
@@ -574,21 +742,7 @@ export default function HomeWorkspaces() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="tm-button-secondary hidden h-8 items-center px-3 text-xs font-medium text-slate-600 sm:flex">
-                    {currentUser.email}
-                  </div>
-                  <div className="flex h-8 w-8 items-center justify-center bg-slate-900 text-xs font-bold text-white">
-                    {currentUser.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="tm-button-secondary h-9 px-3 text-sm font-medium text-slate-600"
-                  >
-                    Logout
-                  </button>
-                </div>
+                <AccountMenu user={currentUser} onLogout={handleLogout} />
               </div>
             ) : (
               <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
@@ -610,27 +764,8 @@ export default function HomeWorkspaces() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <CreateBoardButton
-                    onCreated={async (board) => {
-                      await Promise.all([loadBoards(), loadWorkspaceAnalytics()]);
-                      setActiveSidebarItem("Spaces");
-                      setIsSpacesOpen(true);
-                      setSelectedBoardId(board.id);
-                    }}
-                  />
-                  <div className="tm-button-secondary hidden h-8 items-center px-3 text-xs font-medium text-slate-600 sm:flex">
-                    {currentUser.email}
-                  </div>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-white">
-                    {currentUser.name.slice(0, 2).toUpperCase()}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="tm-button-secondary h-9 px-3 text-sm font-medium text-slate-600"
-                  >
-                    Logout
-                  </button>
+                  <CreateBoardButton onCreated={handleWorkspaceCreated} />
+                  <AccountMenu user={currentUser} onLogout={handleLogout} />
                 </div>
               </div>
             )}
@@ -660,43 +795,75 @@ export default function HomeWorkspaces() {
                     {currentUser.name.split(" ")[0]}&apos;s work floor
                   </h1>
                   <p className="mt-2 max-w-xl text-sm leading-6 text-blue-100/85">
-                    Every workspace is a room. Open one to move cards, inspect signals, and keep the work visible.
+                    Every workspace is a room. Open one to move tasks, inspect signals, and keep the work visible.
                   </p>
                 </div>
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   <div className="tm-dashboard-stat tm-directory-stat px-3 py-2.5 sm:min-w-24">
-                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-blue-100">Rooms</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-blue-100">Workspaces</p>
                     <p className="mt-1 text-xl font-black">{displayWorkspaceBoards}</p>
                   </div>
                   <div className="tm-dashboard-stat tm-directory-stat px-3 py-2.5 sm:min-w-24">
-                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-blue-100">Cards</p>
-                    <p className="mt-1 text-xl font-black">{displayWorkspaceTasks}</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-blue-100">Open tasks</p>
+                    <p className="mt-1 text-xl font-black">{workspaceSummary?.open_tasks ?? displayWorkspaceTasks}</p>
                   </div>
                   <div className="tm-dashboard-stat tm-directory-stat px-3 py-2.5 sm:min-w-24">
-                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-blue-100">Cleared</p>
-                    <p className="mt-1 text-xl font-black">{workspaceSummary?.done_tasks ?? 0}</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.14em] text-blue-100">Overdue</p>
+                    <p className={`mt-1 text-xl font-black ${(workspaceSummary?.overdue_tasks ?? 0) > 0 ? "text-orange-300" : ""}`}>
+                      {workspaceSummary?.overdue_tasks ?? 0}
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="tm-directory-toolbar mb-5 flex flex-col gap-3 border p-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="tm-directory-toolbar mb-5 flex flex-col gap-4 border p-4 xl:flex-row xl:items-end xl:justify-between">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Workspace nodes</p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {displayWorkspaceBoards} rooms / {displayWorkspaceColumns} desks / {displayWorkspaceTasks} cards
+                  {displayWorkspaceBoards} workspaces / {displayWorkspaceColumns} desks / {displayWorkspaceTasks} tasks
                 </p>
               </div>
-              <select
-                value={sortMode}
-                onChange={(event) => setSortMode(event.target.value as SortMode)}
-                className="tm-input h-9 border px-3 text-sm text-slate-900 outline-none"
-              >
-                <option value="recent">Newest first</option>
-                <option value="updated">Recently updated</option>
-                <option value="az">A to Z</option>
-                <option value="za">Z to A</option>
-              </select>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-slate-500">
+                  Showing {filteredBoards.length} of {directorySourceCount}
+                </span>
+                <div className="flex border border-blue-200 bg-white">
+                  {(["ALL", "ACTIVE", "ARCHIVED"] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setDirectoryFilter(filter)}
+                      className={`border-r border-blue-200 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] last:border-r-0 ${
+                        directoryFilter === filter
+                          ? "bg-blue-600 text-white"
+                          : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                </div>
+                {query.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    className="tm-button-secondary h-9 px-3 text-xs font-bold text-slate-600"
+                  >
+                    Clear ×
+                  </button>
+                )}
+                <select
+                  value={sortMode}
+                  onChange={(event) => setSortMode(event.target.value as SortMode)}
+                  className="tm-input h-9 border px-3 text-sm text-slate-900 outline-none"
+                >
+                  <option value="recent">Newest first</option>
+                  <option value="updated">Recently updated</option>
+                  <option value="az">A to Z</option>
+                  <option value="za">Z to A</option>
+                </select>
+              </div>
             </div>
 
             {error && (
@@ -705,43 +872,23 @@ export default function HomeWorkspaces() {
               </div>
             )}
 
-            <div className="mb-4 flex flex-wrap items-center gap-2">
-              <div className="tm-button-secondary px-3 py-2 text-sm text-slate-600">
-                Showing {filteredBoards.length} of {boards.length}
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsArchiveOpen(true)}
-                className="tm-button-secondary px-3 py-2 text-sm font-medium text-slate-600"
-              >
-                Archived {archivedBoards.length}
-              </button>
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                disabled={!query.trim()}
-                className="tm-button-secondary px-3 py-2 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Clear search
-              </button>
-            </div>
-
-            {filteredBoards.length > 0 ? (
+            {filteredBoards.length > 0 || (directoryFilter !== "ARCHIVED" && !query.trim()) ? (
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-                {filteredBoards.map((board, boardIndex) => (
+                {filteredBoards.map((board, boardIndex) => {
+                  const analytics = boardAnalyticsById.get(board.id);
+                  const health = getWorkspaceHealth(board, analytics);
+                  const isArchived = Boolean(board.archived_at);
+                  const members = board.board_members || [];
+                  const latestActivity = board.activity_logs?.[0];
+                  const intakeTasks =
+                    (board.columns || []).find((column) => column.is_intake)?.tasks?.length || 0;
+
+                  return (
                   <article
                     key={board.id}
-                    className="tm-card tm-directory-card tm-fade-in"
+                    className={`tm-card tm-directory-card tm-fade-in ${isArchived ? "is-archived" : ""}`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveSidebarItem("Spaces");
-                        setIsSpacesOpen(true);
-                        setSelectedBoardId(board.id);
-                      }}
-                      className="block w-full p-4 text-left"
-                    >
+                    <div className="p-4">
                       <div className="mb-4 flex items-start justify-between gap-3 border-b border-blue-100 pb-3">
                         <div className="min-w-0">
                           <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-600">
@@ -751,11 +898,11 @@ export default function HomeWorkspaces() {
                             {board.title}
                           </h2>
                           <p className="mt-1 text-xs text-slate-500">
-                            Updated {formatDate(board.updated_at)}
+                            {isArchived ? `Archived ${formatDate(board.archived_at)}` : `Updated ${formatDate(board.updated_at)}`}
                           </p>
                         </div>
-                        <span className="border border-lime-300 bg-lime-50 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-lime-700">
-                          Online
+                        <span className={`border px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] ${health.className}`}>
+                          {health.label}
                         </span>
                       </div>
 
@@ -763,7 +910,7 @@ export default function HomeWorkspaces() {
                         {board.description || "No description"}
                       </p>
 
-                      <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+                      <div className="mt-4 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
                         <div className="tm-directory-metric border px-3 py-2">
                           <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Desks</p>
                           <p className="mt-1 font-black text-slate-950">
@@ -771,58 +918,139 @@ export default function HomeWorkspaces() {
                           </p>
                         </div>
                         <div className="tm-directory-metric border px-3 py-2">
-                          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Cards</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Tasks</p>
                           <p className="mt-1 font-black text-slate-950">{getTaskCount(board)}</p>
                         </div>
                         <div className="tm-directory-metric border px-3 py-2">
                           <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Intake</p>
                           <p className="mt-1 font-black text-slate-950">
-                            {(board.columns || []).find((column) => column.is_intake)?.tasks?.length || 0}
+                            {intakeTasks}
+                          </p>
+                        </div>
+                        <div className="tm-directory-metric border px-3 py-2">
+                          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Overdue</p>
+                          <p className={`mt-1 font-black ${(analytics?.overdue_tasks || 0) > 0 ? "text-red-600" : "text-slate-950"}`}>
+                            {analytics?.overdue_tasks || 0}
                           </p>
                         </div>
                       </div>
-                    </button>
+
+                      {!isArchived && (
+                        <div className="mt-4">
+                          <div className="mb-1 flex items-center justify-between text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">
+                            <span>Completion signal</span>
+                            <span>{analytics?.completion_rate || 0}%</span>
+                          </div>
+                          <div className="h-2 border border-blue-100 bg-blue-50">
+                            <div
+                              className="h-full bg-blue-600"
+                              style={{ width: `${analytics?.completion_rate || 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4 grid gap-3 border-t border-blue-100 pt-3 sm:grid-cols-[auto_1fr] sm:items-center">
+                        <div>
+                          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Crew</p>
+                          <div className="mt-1 flex items-center">
+                            {members.length > 0 ? (
+                              members.map((member, memberIndex) => (
+                                <span
+                                  key={member.user_id}
+                                  title={`${member.users.name} (${member.users.email})`}
+                                  className="relative flex h-7 w-7 items-center justify-center border border-white bg-slate-900 text-[8px] font-black text-white"
+                                  style={{ marginLeft: memberIndex === 0 ? 0 : -5, zIndex: members.length - memberIndex }}
+                                >
+                                  {getInitials(member.users.name)}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-slate-400">No members</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-black uppercase tracking-[0.12em] text-slate-500">Latest signal</p>
+                          <p className="mt-1 truncate text-xs font-semibold text-slate-700">
+                            {latestActivity?.action_text || "No recent activity"}
+                          </p>
+                          <p className="text-[9px] text-slate-400">
+                            {formatRelativeTime(latestActivity?.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
                     <div className="tm-directory-card-footer flex items-center justify-between gap-2 border-t border-slate-200 px-4 py-3">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-slate-500">
-                        Node online / {formatDate(board.created_at)}
-                      </span>
-                      <div className="flex gap-1">
+                      {isArchived ? (
                         <button
                           type="button"
-                          onClick={() => handleDuplicate(board.id)}
-                          disabled={duplicatingBoardId === board.id}
-                          className="rounded px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                          onClick={() => handleRestoreBoard(board.id)}
+                          disabled={restoringBoardId === board.id}
+                          className="tm-button-primary ml-auto px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-white disabled:opacity-50"
                         >
-                          {duplicatingBoardId === board.id ? "Copying" : "Copy"}
+                          {restoringBoardId === board.id ? "Restoring" : "Restore workspace"}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => openEdit(board)}
-                          className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50"
-                        >
-                          Edit
-                        </button>
+                      ) : (
+                        <>
                         <button
                           type="button"
                           onClick={() => {
-                            setDeletingBoard(board);
-                            setError("");
+                            setDirectoryFilter("ACTIVE");
+                            setSelectedBoardId(board.id);
                           }}
-                          className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                          className="text-xs font-black uppercase tracking-[0.14em] text-blue-700 hover:text-blue-500"
                         >
-                          Archive
+                          Enter workspace →
                         </button>
-                      </div>
+                        <details className="tm-directory-actions relative">
+                          <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center border border-blue-200 bg-white text-base font-black text-blue-700">
+                            ⋯
+                          </summary>
+                          <div className="absolute bottom-[calc(100%+6px)] right-0 z-20 grid w-36 border border-blue-200 bg-white p-1 shadow-xl">
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicate(board.id)}
+                              disabled={duplicatingBoardId === board.id}
+                              className="px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                            >
+                              {duplicatingBoardId === board.id ? "Copying" : "Duplicate"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openEdit(board)}
+                              className="px-3 py-2 text-left text-xs font-semibold text-blue-600 hover:bg-blue-50"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDeletingBoard(board);
+                                setError("");
+                              }}
+                              className="px-3 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50"
+                            >
+                              Archive
+                            </button>
+                          </div>
+                        </details>
+                        </>
+                      )}
                     </div>
                   </article>
-                ))}
+                  );
+                })}
+                {directoryFilter !== "ARCHIVED" && !query.trim() && (
+                  <CreateBoardButton variant="card" onCreated={handleWorkspaceCreated} />
+                )}
               </div>
             ) : (
               <div className="tm-panel border-dashed p-10 text-center text-slate-500">
-                {boards.length === 0
-                  ? "No boards yet. Create the first workspace to start."
-                  : "No boards match your search."}
+                {directoryFilter === "ARCHIVED"
+                  ? "No archived workspaces."
+                  : "No workspaces match your search."}
               </div>
             )}
               </>
@@ -837,10 +1065,10 @@ export default function HomeWorkspaces() {
             onSubmit={handleSave}
             className="tm-modal tm-pop-in w-full max-w-md border border-slate-200 bg-white p-5 text-slate-900"
           >
-            <h2 className="mb-4 text-xl font-bold text-slate-900">Edit board</h2>
+            <h2 className="mb-4 text-xl font-bold text-slate-900">Edit workspace</h2>
             <label className="mb-3 block">
               <span className="mb-1 block text-sm font-medium text-slate-700">
-                Board name
+                Workspace name
               </span>
               <input
                 value={title}
@@ -882,9 +1110,9 @@ export default function HomeWorkspaces() {
       {deletingBoard && (
         <div className="tm-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-4 py-12">
           <div className="tm-modal tm-pop-in w-full max-w-md border border-slate-200 bg-white p-5 text-slate-900">
-            <h2 className="text-xl font-bold text-slate-900">Archive board?</h2>
+            <h2 className="text-xl font-bold text-slate-900">Archive workspace?</h2>
             <p className="mt-2 text-sm text-slate-600">
-              {deletingBoard.title} will be hidden from active workspaces. You can restore it later.
+              {deletingBoard.title} will move to the archived workspace directory. You can restore it later.
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -900,64 +1128,13 @@ export default function HomeWorkspaces() {
                 disabled={isDeleting}
                 className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isDeleting ? "Archiving" : "Archive board"}
+                {isDeleting ? "Archiving" : "Archive workspace"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {isArchiveOpen && (
-        <div className="tm-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-4 py-12">
-          <div className="tm-modal tm-pop-in w-full max-w-2xl border border-slate-200 bg-white p-5 text-slate-900">
-            <div className="mb-4 flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">Archived boards</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Restore boards when you need to bring them back to active workspaces.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsArchiveOpen(false)}
-                className="tm-button-secondary px-3 py-1.5 text-sm font-medium text-slate-500"
-              >
-                Close
-              </button>
-            </div>
-
-            {archivedBoards.length > 0 ? (
-              <div className="grid gap-2">
-                {archivedBoards.map((board) => (
-                  <div
-                    key={board.id}
-                    className="tm-card flex items-center justify-between gap-3 px-3 py-2"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-900">{board.title}</p>
-                      <p className="text-xs text-slate-500">
-                        Archived {formatDate(board.archived_at)}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRestoreBoard(board.id)}
-                      disabled={restoringBoardId === board.id}
-                      className="tm-button-primary px-3 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {restoringBoardId === board.id ? "Restoring" : "Restore"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-md border border-dashed border-slate-200 px-3 py-10 text-center text-sm text-slate-500">
-                No archived boards
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </main>
   );
 }

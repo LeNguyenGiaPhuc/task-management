@@ -50,6 +50,35 @@ router.use(async (req, res, next) => {
 });
 
 const boardSummaryInclude = {
+  board_members: {
+    orderBy: { joined_at: 'asc' },
+    take: 4,
+    include: {
+      users: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          avatar_url: true,
+        },
+      },
+    },
+  },
+  activity_logs: {
+    orderBy: { created_at: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      action_text: true,
+      created_at: true,
+      users: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  },
   columns: {
     select: {
       id: true,

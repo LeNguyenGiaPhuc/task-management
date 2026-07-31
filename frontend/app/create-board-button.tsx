@@ -10,8 +10,10 @@ type CreateBoardResponse = {
 
 export default function CreateBoardButton({
   onCreated,
+  variant = "primary",
 }: {
   onCreated: (board: CreateBoardResponse) => Promise<void>;
+  variant?: "primary" | "card";
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -48,7 +50,7 @@ export default function CreateBoardButton({
       setIsOpen(false);
       await onCreated(board);
     } catch {
-      setError("Khong tao duoc board. Kiem tra backend roi thu lai.");
+      setError("Khong tao duoc workspace. Kiem tra backend roi thu lai.");
     } finally {
       setIsSubmitting(false);
     }
@@ -56,13 +58,39 @@ export default function CreateBoardButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="tm-button-primary h-10 px-4 text-sm font-semibold text-white"
-      >
-        + New board
-      </button>
+      {variant === "card" ? (
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="tm-directory-create-card flex min-h-72 w-full flex-col items-start justify-between border border-dashed p-5 text-left"
+        >
+          <span>
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-600">
+              Empty work bay
+            </span>
+            <span className="mt-3 block text-3xl font-light text-blue-600">＋</span>
+          </span>
+          <span>
+            <span className="block text-base font-black uppercase tracking-wide text-slate-950">
+              Create a workspace
+            </span>
+            <span className="mt-2 block max-w-xs text-sm leading-5 text-slate-500">
+              Open a new room for desks, tasks, members, and delivery signals.
+            </span>
+          </span>
+          <span className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-600">
+            Initialize workspace →
+          </span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="tm-button-primary h-10 px-4 text-sm font-semibold text-white"
+        >
+          + New workspace
+        </button>
+      )}
 
       {isOpen &&
         createPortal(
@@ -73,9 +101,9 @@ export default function CreateBoardButton({
           >
             <div className="mb-6">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Workspace
+                Workspace initializer
               </p>
-              <h2 className="mt-1 text-2xl font-bold text-slate-900">Create space</h2>
+              <h2 className="mt-1 text-2xl font-bold text-slate-900">Create workspace</h2>
               <p className="mt-2 text-sm text-slate-600">
                 Create a new workspace for columns, tasks, members, and activity tracking.
               </p>
@@ -83,7 +111,7 @@ export default function CreateBoardButton({
 
             <label className="mb-4 block">
               <span className="mb-1 block text-sm font-medium text-slate-700">
-                Space name
+                Workspace name
               </span>
               <input
                 value={title}
@@ -123,7 +151,7 @@ export default function CreateBoardButton({
                 disabled={isSubmitting || !title.trim()}
                 className="tm-button-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting ? "Creating" : "Create space"}
+                {isSubmitting ? "Creating" : "Create workspace"}
               </button>
             </div>
           </form>
