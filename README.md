@@ -32,6 +32,9 @@ This project is designed as a practical full-stack product for learning and inte
 
 ### Kanban Board
 
+- Focus-mode workspace floor with a persistent Task Intake and project desks.
+- Capture and fully edit tasks before assigning them to a desk.
+- Move tasks both from Intake to a desk and from a desk back to Intake.
 - Create, rename, reorder, and delete columns.
 - Create tasks inside columns.
 - Drag and drop tasks between columns.
@@ -207,7 +210,7 @@ Main tables:
 | `users` | Stores user accounts, password auth data, Google OAuth data, and profile info |
 | `boards` | Stores workspaces/boards |
 | `board_members` | Stores board membership, board role, and project role |
-| `columns` | Stores Kanban columns/lists |
+| `columns` | Stores project desks and the protected system Intake column |
 | `tasks` | Stores task cards |
 | `sub_tasks` | Stores task checklists/subtasks |
 | `task_attachments` | Stores uploaded task attachments |
@@ -230,6 +233,11 @@ The following authentication, archive, task-type, and project-role fields are in
 - `tasks.archived_at`
 - `board_members.project_role`
 - `task_comments`
+- `columns.is_intake`
+
+The `20260731000000_add_intake_column` migration creates exactly one protected
+Task Intake column for every existing board. New boards create their Intake
+column in the same transaction as the board owner membership.
 
 ## Environment Requirements
 

@@ -78,6 +78,7 @@ type Column = {
   id: string;
   title: string;
   order?: number;
+  is_intake?: boolean;
   tasks: Task[];
 };
 
@@ -93,6 +94,7 @@ type BoardAnalytics = {
   generated_at: string;
   summary: {
     columns: number;
+    intake_tasks: number;
     total_tasks: number;
     open_tasks: number;
     done_tasks: number;
@@ -137,6 +139,7 @@ type BoardAnalytics = {
 type CreatedColumn = Omit<Column, "tasks">;
 
 type TaskUpdate = {
+  column_id: string;
   title: string;
   description: string | null;
   task_type: TaskType;
@@ -275,6 +278,7 @@ function getDueClass(dueDate?: string | null) {
 function TaskDetailModal({
   task,
   members,
+  locations,
   comments,
   attachments,
   onClose,
@@ -292,6 +296,7 @@ function TaskDetailModal({
 }: {
   task: Task;
   members: BoardMember[];
+  locations: Column[];
   comments: TaskComment[];
   attachments: TaskAttachment[];
   onClose: () => void;
@@ -311,6 +316,7 @@ function TaskDetailModal({
   const [description, setDescription] = useState(task.description || "");
   const [taskType, setTaskType] = useState<TaskType>(task.task_type || "TASK");
   const [priority, setPriority] = useState<Priority>(task.priority || "MEDIUM");
+  const [columnId, setColumnId] = useState(task.column_id || "");
   const [assigneeId, setAssigneeId] = useState(task.assignee_id || "");
   const [dueDate, setDueDate] = useState(toDateInputValue(task.due_date));
   const [subTaskTitle, setSubTaskTitle] = useState("");
@@ -333,6 +339,7 @@ function TaskDetailModal({
     setIsSaving(true);
     try {
       await onSave({
+        column_id: columnId,
         title: title.trim(),
         description: description.trim() || null,
         task_type: taskType,
@@ -414,7 +421,7 @@ function TaskDetailModal({
   };
 
   return (
-    <div className="tm-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="tm-modal-backdrop fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div className="tm-modal tm-pop-in max-h-[92vh] w-full max-w-3xl overflow-y-auto bg-white p-5">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
@@ -449,6 +456,21 @@ function TaskDetailModal({
               onChange={(event) => setDescription(event.target.value)}
               className="tm-input min-h-28 w-full border px-3 py-2 text-sm outline-none"
             />
+          </label>
+
+          <label>
+            <span className="mb-1 block text-sm font-medium text-slate-700">Location</span>
+            <select
+              value={columnId}
+              onChange={(event) => setColumnId(event.target.value)}
+              className="tm-input w-full border px-3 py-2 text-sm outline-none"
+            >
+              {locations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.is_intake ? "Task Intake — waiting to be placed" : `Desk — ${location.title}`}
+                </option>
+              ))}
+            </select>
           </label>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
@@ -753,9 +775,10 @@ export function BoardWorkspace({
   const [taskComments, setTaskComments] = useState<TaskComment[]>([]);
   const [taskAttachments, setTaskAttachments] = useState<TaskAttachment[]>([]);
   const [columnTitle, setColumnTitle] = useState("");
-  const [taskTitles, setTaskTitles] = useState<Record<string, string>>({});
+  const [trayTaskTitle, setTrayTaskTitle] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<BoardView>("BOARD");
+  const [isControlsOpen, setIsControlsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("ALL");
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>("ALL");
@@ -801,8 +824,24 @@ export function BoardWorkspace({
     };
   }, [id]);
 
+  useEffect(() => {
+    if (!isControlsOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsControlsOpen(false);
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isControlsOpen]);
+
   const selectedTask =
     columns.flatMap((column) => column.tasks).find((task) => task.id === selectedTaskId) || null;
+  const intakeColumn = columns.find((column) => column.is_intake) || null;
+  const deskColumns = useMemo(
+    () => columns.filter((column) => !column.is_intake),
+    [columns]
+  );
   const currentMember = boardMembers.find((member) => member.user_id === currentUser?.id);
   const currentRole = currentMember?.role || null;
   const canManageBoard = currentRole === "OWNER" || currentRole === "ADMIN";
@@ -815,9 +854,15 @@ export function BoardWorkspace({
     priorityFilter !== "ALL" ||
     assigneeFilter !== "ALL" ||
     dueFilter !== "ALL";
+  const activeFilterCount = [
+    query.trim().length > 0,
+    priorityFilter !== "ALL",
+    assigneeFilter !== "ALL",
+    dueFilter !== "ALL",
+  ].filter(Boolean).length;
   const totalTasks = getColumnTaskCount(columns);
   const allTasks = useMemo(() => columns.flatMap((column) => column.tasks), [columns]);
-  const doneTasks = columns
+  const doneTasks = deskColumns
     .filter((column) => isDoneColumn(column.title))
     .reduce((total, column) => total + column.tasks.length, 0);
   const openTasks = Math.max(totalTasks - doneTasks, 0);
@@ -862,7 +907,7 @@ export function BoardWorkspace({
     label: taskType,
     count: allTasks.filter((task) => (task.task_type || "TASK") === taskType).length,
   }));
-  const columnReport = columns.map((column) => ({
+  const columnReport = deskColumns.map((column) => ({
     id: column.id,
     title: column.title,
     count: column.tasks.length,
@@ -891,6 +936,8 @@ export function BoardWorkspace({
   const displayOverdueTasks = analyticsSummary?.overdue_tasks ?? overdueTasks;
   const displayDueSoonTasks = analyticsSummary?.due_soon_tasks ?? dueSoonTasks;
   const displayUnassignedTasks = analyticsSummary?.unassigned_tasks ?? unassignedTasks;
+  const displayIntakeTasks =
+    analyticsSummary?.intake_tasks ?? intakeColumn?.tasks.length ?? 0;
   const displayColumnReport = boardAnalytics?.columns.map((column) => ({
     id: column.id,
     title: column.title,
@@ -923,7 +970,7 @@ export function BoardWorkspace({
       : displayUrgentTasks > 0
         ? { label: "High priority", className: "bg-amber-50 text-amber-700 ring-amber-200" }
         : { label: "On track", className: "bg-emerald-50 text-emerald-700 ring-emerald-200" };
-  const visibleColumns = useMemo(() => {
+  const filteredColumns = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return columns.map((column) => ({
@@ -947,6 +994,9 @@ export function BoardWorkspace({
       }),
     }));
   }, [assigneeFilter, columns, dueFilter, priorityFilter, query]);
+  const visibleColumns = filteredColumns.filter((column) => !column.is_intake);
+  const visibleIntakeTasks =
+    filteredColumns.find((column) => column.is_intake)?.tasks || [];
 
   const updateTaskInColumns = (updatedTask: Task) => {
     setColumns((currentColumns) =>
@@ -1283,6 +1333,7 @@ export function BoardWorkspace({
 
     setSettingsTitle(boardName);
     setSettingsDescription(boardDescription);
+    setIsControlsOpen(false);
     setIsSettingsOpen(true);
     setError("");
   };
@@ -1321,42 +1372,34 @@ export function BoardWorkspace({
     }
   };
 
-  const handleCreateTask = async (event: FormEvent<HTMLFormElement>, columnId: string) => {
+  const handleCreateTrayTask = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    const title = taskTitles[columnId]?.trim();
+    const title = trayTaskTitle.trim();
     if (!title) return;
 
     setError("");
-    setSavingTaskColumnId(columnId);
 
     try {
-      const res = await apiFetch("/api/tasks", {
+      const response = await apiFetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          column_id: columnId,
+          board_id: id,
+          column_id: intakeColumn?.id,
           title,
           task_type: "TASK",
           priority: "MEDIUM",
         }),
       });
 
-      if (!res.ok) throw new Error("Create task failed");
+      if (!response.ok) {
+        throw new Error("Create intake task failed");
+      }
 
-      const task = normalizeTask((await res.json()) as Task);
-
-      setColumns((currentColumns) =>
-        currentColumns.map((column) =>
-          column.id === columnId ? { ...column, tasks: [...column.tasks, task] } : column
-        )
-      );
-      setTaskTitles((currentTitles) => ({ ...currentTitles, [columnId]: "" }));
+      setTrayTaskTitle("");
       await fetchBoardData();
     } catch {
-      setError("Could not create task. Check backend and try again.");
-    } finally {
-      setSavingTaskColumnId(null);
+      setError("Could not capture this task in Intake. Check the database migration and try again.");
     }
   };
 
@@ -1614,12 +1657,12 @@ export function BoardWorkspace({
   };
 
   const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId, type } = result;
+
     if (isFiltering) {
       setError("Clear search/filter before reordering tasks.");
       return;
     }
-
-    const { destination, source, draggableId, type } = result;
 
     if (!destination) return;
     if (
@@ -1635,10 +1678,10 @@ export function BoardWorkspace({
         return;
       }
 
-      const newColumns = Array.from(columns);
+      const newColumns = Array.from(deskColumns);
       const [movedColumn] = newColumns.splice(source.index, 1);
       newColumns.splice(destination.index, 0, movedColumn);
-      setColumns(newColumns);
+      setColumns(intakeColumn ? [intakeColumn, ...newColumns] : newColumns);
 
       let newOrder = 1000;
       if (newColumns.length > 1) {
@@ -1670,8 +1713,20 @@ export function BoardWorkspace({
       return;
     }
 
-    const sourceColIndex = columns.findIndex((column) => column.id === source.droppableId);
-    const destColIndex = columns.findIndex((column) => column.id === destination.droppableId);
+    const sourceColumnId =
+      source.droppableId === "task-tray" ? intakeColumn?.id : source.droppableId;
+    const destinationColumnId =
+      destination.droppableId === "task-tray"
+        ? intakeColumn?.id
+        : destination.droppableId;
+
+    if (!sourceColumnId || !destinationColumnId) {
+      setError("Task Intake is not ready. Apply the database migration first.");
+      return;
+    }
+
+    const sourceColIndex = columns.findIndex((column) => column.id === sourceColumnId);
+    const destColIndex = columns.findIndex((column) => column.id === destinationColumnId);
 
     if (sourceColIndex === -1 || destColIndex === -1) return;
 
@@ -1689,7 +1744,10 @@ export function BoardWorkspace({
     } else {
       const sourceTasks: Task[] = Array.from(sourceCol.tasks);
       const [movedTask] = sourceTasks.splice(source.index, 1);
-      destTasks.splice(destination.index, 0, movedTask);
+      destTasks.splice(destination.index, 0, {
+        ...movedTask,
+        column_id: destinationColumnId,
+      });
       newColumns[sourceColIndex] = { ...sourceCol, tasks: sourceTasks };
       newColumns[destColIndex] = { ...destCol, tasks: destTasks };
     }
@@ -1711,11 +1769,13 @@ export function BoardWorkspace({
     }
 
     try {
+      setSavingTaskColumnId(destinationColumnId);
+      setError("");
       const res = await apiFetch(`/api/tasks/${draggableId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          column_id: destination.droppableId,
+          column_id: destinationColumnId,
           order: newOrder,
         }),
       });
@@ -1724,19 +1784,27 @@ export function BoardWorkspace({
       await fetchBoardData();
     } catch {
       setError("Could not save task position. Try again.");
+      await fetchBoardData();
+    } finally {
+      setSavingTaskColumnId(null);
     }
   };
 
   const pageBackground = embedded ? "transparent" : getBoardPageBackground(boardBackground);
-  const headerClass = "tm-board-header border-b px-6 py-3";
   const inputClass = "tm-input h-9 border px-3 text-sm text-slate-900 outline-none";
   const smallInputClass = "tm-input min-w-0 flex-1 border px-2 py-1.5 text-sm text-slate-900 outline-none";
   const innerCardClass = "rounded-md border border-slate-200 bg-white/80 px-3 py-2";
-  const columnClass = "tm-column flex max-h-[calc(100vh-170px)] min-w-[300px] flex-col border";
-  const taskCardClass = "tm-task rounded-md border p-3";
-  const addColumnClass = "tm-panel min-w-[300px] self-start p-3";
+  const columnClass = "tm-work-desk flex max-h-[620px] min-w-[360px] flex-col border";
+  const taskCardClass = "tm-desk-task border p-3";
+  const addColumnClass = "tm-add-desk min-w-[300px] self-start border p-4";
   const reportPanelClass = "tm-panel p-4";
   const summaryCards = [
+    {
+      label: "Waiting in Intake",
+      value: displayIntakeTasks,
+      detail: "Ready to be placed",
+      tone: displayIntakeTasks > 0 ? "text-blue-700" : "text-slate-900",
+    },
     {
       label: "Open tasks",
       value: displayOpenTasks,
@@ -1768,16 +1836,49 @@ export function BoardWorkspace({
       className={`${embedded ? "embedded-board-light min-h-full" : "tm-shell min-h-screen"} text-slate-900`}
       style={{ backgroundColor: pageBackground }}
     >
-      <header className={headerClass}>
-        <div className={`${embedded ? "w-full" : "mx-auto max-w-7xl"} flex flex-col gap-3`}>
-          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+      {isControlsOpen && (
+        <button
+          type="button"
+          aria-label="Close workspace controls"
+          onClick={() => setIsControlsOpen(false)}
+          className="fixed inset-0 z-[130] cursor-default bg-slate-950/20 backdrop-blur-[1px]"
+        />
+      )}
+
+      <button
+        type="button"
+        onClick={() => setIsControlsOpen((current) => !current)}
+        className="tm-controls-trigger fixed right-0 top-1/2 z-[145] flex -translate-y-1/2 flex-col items-center justify-center border border-r-0 border-blue-300 bg-white px-2 py-4 text-blue-700 shadow-lg"
+        aria-label={isControlsOpen ? "Close workspace controls" : "Open workspace controls"}
+        title="Workspace controls"
+      >
+        <span className="text-lg font-black">{isControlsOpen ? ">" : "<"}</span>
+        {activeFilterCount > 0 && (
+          <span className="mt-2 flex h-5 min-w-5 items-center justify-center bg-blue-600 px-1 text-[10px] font-black text-white">
+            {activeFilterCount}
+          </span>
+        )}
+      </button>
+
+      <aside
+        className={`tm-workspace-controls fixed right-0 top-0 z-[140] h-screen w-[min(460px,calc(100vw-24px))] overflow-y-auto border-l border-blue-200 bg-slate-50 p-5 shadow-2xl transition-transform duration-200 ${
+          isControlsOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        aria-hidden={!isControlsOpen}
+        inert={!isControlsOpen}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-4 border-b border-blue-200 pb-4">
             <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-600">
+                Workspace controls
+              </p>
               <h1 className={`text-xl font-bold ${embedded ? "text-slate-900" : "text-slate-950"}`}>{boardName}</h1>
               {boardDescription && (
                 <p className={`mt-0.5 max-w-2xl text-xs ${embedded ? "text-slate-600" : "text-slate-600"}`}>{boardDescription}</p>
               )}
               <p className={`mt-0.5 text-xs ${embedded ? "text-slate-500" : "text-slate-500"}`}>
-                {columns.length} columns / {displayTotalTasks} tasks / {displayUrgentTasks} urgent
+                {deskColumns.length} desks / {displayTotalTasks} tasks / {intakeColumn?.tasks.length || 0} waiting
               </p>
               <div className={`mt-1 inline-flex items-center gap-2 rounded-md px-2 py-0.5 text-xs font-semibold ${
                 embedded
@@ -1790,12 +1891,25 @@ export function BoardWorkspace({
                 </span>
               </div>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[260px_150px_180px_150px]">
+            <button
+              type="button"
+              onClick={() => setIsControlsOpen(false)}
+              className="tm-button-secondary border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-slate-600"
+            >
+              Close
+            </button>
+          </div>
+
+          <section className="grid gap-2">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              Find work
+            </h2>
+            <div className="grid gap-2 sm:grid-cols-2">
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search tasks"
-                className={inputClass}
+                className={`${inputClass} sm:col-span-2`}
               />
               <select
                 value={priorityFilter}
@@ -1841,7 +1955,7 @@ export function BoardWorkspace({
                   setDueFilter("ALL");
                 }}
                 disabled={!isFiltering}
-                className={`${inputClass} bg-slate-50 font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-1 xl:col-span-2`}
+                className={`${inputClass} bg-white font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2`}
               >
                 Clear filters
               </button>
@@ -1849,13 +1963,13 @@ export function BoardWorkspace({
                 <button
                   type="button"
                   onClick={openSettings}
-                  className="tm-button-primary h-9 px-3 text-sm font-semibold text-white sm:col-span-1 xl:col-span-2"
+                  className="tm-button-primary h-9 px-3 text-sm font-semibold text-white sm:col-span-2"
                 >
-                  Board settings
+                  Workspace settings
                 </button>
               )}
             </div>
-          </div>
+          </section>
 
           {error && (
             <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
@@ -1863,15 +1977,18 @@ export function BoardWorkspace({
             </div>
           )}
 
-          <div className="flex gap-2 border-b border-slate-200">
+          <div className="flex gap-2 border-b border-slate-200 pt-1">
             {[
-              { key: "BOARD", label: "Board" },
+              { key: "BOARD", label: "Desks" },
               { key: "REPORTS", label: "Reports" },
             ].map((item) => (
               <button
                 key={item.key}
                 type="button"
-                onClick={() => setActiveView(item.key as BoardView)}
+                onClick={() => {
+                  setActiveView(item.key as BoardView);
+                  setIsControlsOpen(false);
+                }}
                 className={`border-b-2 px-1 pb-2 text-sm font-semibold transition ${
                   activeView === item.key
                     ? "border-blue-600 text-blue-600"
@@ -1891,7 +2008,7 @@ export function BoardWorkspace({
               </span>
             </div>
 
-            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-2 sm:grid-cols-2">
               {summaryCards.map((card) => (
                 <div
                   key={card.label}
@@ -1970,7 +2087,7 @@ export function BoardWorkspace({
               {editingMemberId && (
                 <form
                   onSubmit={handleSaveMember}
-                  className="mb-2 grid gap-2 rounded-md border border-blue-200 bg-blue-50 p-2 sm:grid-cols-[160px_1fr_auto_auto]"
+                  className="mb-2 grid gap-2 rounded-md border border-blue-200 bg-blue-50 p-2"
                 >
                   <select
                     value={editingMemberRole}
@@ -2013,7 +2130,7 @@ export function BoardWorkspace({
               )}
 
               {canManageMembers ? (
-                <form onSubmit={handleAddMember} className="grid gap-2 sm:grid-cols-[1fr_1fr_140px]">
+                <form onSubmit={handleAddMember} className="grid gap-2">
                   <input
                     value={memberName}
                     onChange={(event) => setMemberName(event.target.value)}
@@ -2048,11 +2165,164 @@ export function BoardWorkspace({
             </section>
           </div>
         </div>
-      </header>
+      </aside>
+
+      {!isControlsOpen && error && (
+        <button
+          type="button"
+          onClick={() => setError("")}
+          className="fixed right-14 top-20 z-[125] max-w-sm border border-amber-300 bg-amber-50 px-4 py-3 text-left text-sm font-semibold text-amber-900 shadow-lg"
+          title="Dismiss"
+        >
+          {error}
+        </button>
+      )}
 
       {activeView === "BOARD" ? (
       <DragDropContext onDragEnd={onDragEnd}>
-        <main className={`tm-board-canvas ${embedded ? "w-full" : "mx-auto max-w-7xl"} overflow-x-auto px-6 py-4`}>
+        <main className={`tm-desk-board-canvas ${embedded ? "w-full" : "mx-auto max-w-7xl"} px-4 py-5 sm:px-6`}>
+          <div className="tm-desk-workspace-layout grid gap-5 xl:grid-cols-[310px_minmax(0,1fr)]">
+            <aside className="tm-task-tray-panel flex min-h-[560px] flex-col border">
+              <div className="border-b border-blue-200 bg-slate-950 px-4 py-4 text-white">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-lime-300">
+                      Task intake
+                    </p>
+                    <h2 className="mt-1 text-lg font-black tracking-tight">Task tray</h2>
+                  </div>
+                  <span className="border border-white/20 px-2 py-1 text-xs font-bold">
+                    {intakeColumn?.tasks.length || 0}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-400">
+                  Capture work, edit the details, then place it on the right desk.
+                </p>
+              </div>
+
+              <form onSubmit={handleCreateTrayTask} className="border-b border-blue-200 bg-white p-3">
+                <label className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                  Capture new work
+                </label>
+                <textarea
+                  value={trayTaskTitle}
+                  onChange={(event) => setTrayTaskTitle(event.target.value)}
+                  placeholder="What needs to be done?"
+                  rows={3}
+                  className="tm-input mt-2 w-full resize-none border px-3 py-2 text-sm text-slate-900 outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={!trayTaskTitle.trim() || !intakeColumn}
+                  className="tm-button-primary mt-2 w-full px-3 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  + Add to tray
+                </button>
+              </form>
+
+              <Droppable droppableId="task-tray" type="TASK">
+                {(trayProvided, traySnapshot) => (
+                  <div
+                    ref={trayProvided.innerRef}
+                    {...trayProvided.droppableProps}
+                    className={`tm-tray-dropzone flex min-h-56 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-3 ${
+                      traySnapshot.isDraggingOver ? "bg-blue-100/70" : ""
+                    }`}
+                  >
+                    {visibleIntakeTasks.map((task, index) => (
+                      <Draggable
+                        key={task.id}
+                        draggableId={task.id}
+                        index={index}
+                        isDragDisabled={isFiltering}
+                      >
+                        {(taskProvided, taskSnapshot) => (
+                          <article
+                            ref={taskProvided.innerRef}
+                            {...taskProvided.draggableProps}
+                            onClick={() => {
+                              setTaskComments([]);
+                              setTaskAttachments([]);
+                              setSelectedTaskId(task.id);
+                            }}
+                            className={`tm-tray-draft border p-3 ${
+                              taskSnapshot.isDragging ? "shadow-xl ring-2 ring-blue-400" : ""
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="mt-1 h-2 w-2 shrink-0 bg-lime-400" />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-bold leading-5 text-slate-900">
+                                  {task.title}
+                                </p>
+                                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                  <span className={`px-1.5 py-0.5 text-[9px] font-black ring-1 ${getTaskTypeClass(task.task_type)}`}>
+                                    {task.task_type || "TASK"}
+                                  </span>
+                                  <span className={`px-1.5 py-0.5 text-[9px] font-black ring-1 ${getPriorityClass(task.priority)}`}>
+                                    {task.priority || "MEDIUM"}
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                {...taskProvided.dragHandleProps}
+                                onClick={(event) => event.stopPropagation()}
+                                className="tm-task-drag-handle border border-blue-200 px-1.5 py-1 text-[10px] font-black text-blue-600 hover:bg-blue-50"
+                                aria-label={`Drag ${task.title}`}
+                              >
+                                ::
+                              </button>
+                            </div>
+                            <p className="mt-3 text-[9px] font-black uppercase tracking-[0.16em] text-blue-600">
+                              Click to edit / drag handle to place
+                            </p>
+                          </article>
+                        )}
+                      </Draggable>
+                    ))}
+                    {visibleIntakeTasks.length === 0 && (
+                      <div className="flex flex-1 items-center justify-center border border-dashed border-blue-200 bg-white/70 p-6 text-center">
+                        <div>
+                          <p className="text-sm font-bold text-slate-700">
+                            {isFiltering ? "No matching intake tasks" : "Tray is clear"}
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-slate-500">
+                            Capture work here before placing it on a desk.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {trayProvided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+
+              <div className="border-t border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-semibold text-slate-500">
+                Intake tasks are saved and editable before they reach a desk.
+              </div>
+            </aside>
+
+            <section className="min-w-0">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">
+                    Workspace floor
+                  </p>
+                  <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">
+                    Project desks
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Each desk is a workflow area. Drag cards between desks to move the work.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                  <span className="h-2 w-2 bg-lime-400" />
+                  Ready for work
+                </div>
+              </div>
+
+              <div className="overflow-x-auto pb-8">
           <Droppable droppableId="board-columns" direction="horizontal" type="COLUMN">
             {(provided) => (
               <div ref={provided.innerRef} {...provided.droppableProps} className="flex gap-4">
@@ -2071,7 +2341,7 @@ export function BoardWorkspace({
                           columnSnapshot.isDragging ? "shadow-lg ring-2 ring-blue-200" : ""
                         }`}
                       >
-                        <div className={`border-b p-3 ${embedded ? "border-slate-200" : "border-slate-200"}`} {...columnProvided.dragHandleProps}>
+                        <div className="tm-desk-header border-b border-blue-200 px-4 py-3" {...columnProvided.dragHandleProps}>
                           {editingColumnId === column.id ? (
                             <form onSubmit={(event) => handleRenameColumn(event, column.id)} className="flex gap-2">
                               <input
@@ -2091,12 +2361,15 @@ export function BoardWorkspace({
                           ) : (
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0">
-                                <h2 className={`truncate text-sm font-bold uppercase tracking-wide ${embedded ? "text-slate-700" : "text-slate-700"}`}>
+                                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-600">
+                                  Desk {String(columnIndex + 1).padStart(2, "0")}
+                                </p>
+                                <h2 className="mt-1 truncate text-sm font-black uppercase tracking-wide text-slate-800">
                                   {column.title}
                                 </h2>
-                                <p className={`mt-0.5 text-xs ${embedded ? "text-slate-500" : "text-slate-500"}`}>
-                                  {column.tasks.length} shown /{" "}
-                                  {columns.find((item) => item.id === column.id)?.tasks.length || 0} total
+                                <p className="mt-0.5 text-xs text-slate-500">
+                                  {column.tasks.length} visible /{" "}
+                                  {columns.find((item) => item.id === column.id)?.tasks.length || 0} cards
                                 </p>
                               </div>
                               {canManageColumns && (
@@ -2130,7 +2403,7 @@ export function BoardWorkspace({
                             <div
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              className="flex min-h-24 flex-1 flex-col gap-3 overflow-y-auto p-3"
+                              className="tm-desk-surface flex min-h-64 flex-1 flex-col gap-3 overflow-y-auto p-4"
                             >
                               {column.tasks.map((task, index) => (
                                 <Draggable
@@ -2143,11 +2416,10 @@ export function BoardWorkspace({
                                     <article
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
                                       onClick={() => {
                                         setTaskComments([]);
                                         setTaskAttachments([]);
-                                      setSelectedTaskId(task.id);
+                                        setSelectedTaskId(task.id);
                                       }}
                                       className={`${taskCardClass} ${
                                         snapshot.isDragging
@@ -2155,6 +2427,20 @@ export function BoardWorkspace({
                                           : ""
                                       }`}
                                     >
+                                      <div className="mb-2 flex items-center justify-between gap-2">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.16em] text-blue-600">
+                                          Work card
+                                        </span>
+                                        <button
+                                          type="button"
+                                          {...provided.dragHandleProps}
+                                          onClick={(event) => event.stopPropagation()}
+                                          className="tm-task-drag-handle border border-blue-200 px-1.5 py-1 text-[10px] font-black text-blue-600 hover:bg-blue-50"
+                                          aria-label={`Drag ${task.title}`}
+                                        >
+                                          ::
+                                        </button>
+                                      </div>
                                       <p className={`text-sm font-medium leading-5 ${embedded ? "text-slate-900" : "text-slate-900"}`}>{task.title}</p>
                                       <div className="mt-3 flex flex-wrap items-center gap-2">
                                         <span
@@ -2196,12 +2482,12 @@ export function BoardWorkspace({
                                 </Draggable>
                               ))}
                               {column.tasks.length === 0 && (
-                                <div className={`rounded-md border border-dashed px-3 py-5 text-center text-sm ${
+                                <div className={`tm-desk-empty flex min-h-32 items-center justify-center border border-dashed px-3 py-5 text-center text-sm ${
                                   embedded
-                                    ? "border-slate-200 bg-white text-slate-500"
-                                    : "border-slate-300 bg-white text-slate-400"
+                                    ? "border-blue-200 bg-white/70 text-slate-500"
+                                    : "border-blue-200 bg-white/70 text-slate-400"
                                 }`}>
-                                  {isFiltering ? "No matching tasks" : "No tasks yet"}
+                                  {isFiltering ? "No matching cards" : "Drop a task card on this desk"}
                                 </div>
                               )}
                               {provided.placeholder}
@@ -2209,28 +2495,14 @@ export function BoardWorkspace({
                           )}
                         </Droppable>
 
-                        <form onSubmit={(event) => handleCreateTask(event, column.id)} className={`border-t p-3 ${embedded ? "border-slate-200" : "border-slate-200"}`}>
-                          <div className="flex gap-2">
-                            <input
-                              value={taskTitles[column.id] || ""}
-                              onChange={(event) =>
-                                setTaskTitles((currentTitles) => ({
-                                  ...currentTitles,
-                                  [column.id]: event.target.value,
-                                }))
-                              }
-                              placeholder="Add task"
-                              className={smallInputClass}
-                            />
-                            <button
-                              type="submit"
-                              disabled={savingTaskColumnId === column.id || !taskTitles[column.id]?.trim()}
-                              className="tm-button-primary px-3 py-1.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              Add
-                            </button>
-                          </div>
-                        </form>
+                        <div className="tm-desk-footer flex items-center justify-between border-t border-blue-200 px-4 py-2">
+                          <span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">
+                            Drop zone / {column.title}
+                          </span>
+                          <span className="text-[10px] font-bold text-blue-600">
+                            {savingTaskColumnId === column.id ? "Placing card..." : "Ready"}
+                          </span>
+                        </div>
                       </section>
                     )}
                   </Draggable>
@@ -2245,7 +2517,7 @@ export function BoardWorkspace({
                     <input
                       value={columnTitle}
                       onChange={(event) => setColumnTitle(event.target.value)}
-                      placeholder="New column name"
+                      placeholder="New desk name"
                       className={`mb-3 w-full ${inputClass}`}
                     />
                     <button
@@ -2253,13 +2525,16 @@ export function BoardWorkspace({
                       disabled={isSavingColumn || !columnTitle.trim()}
                       className="tm-button-primary w-full px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {isSavingColumn ? "Creating" : "Add column"}
+                      {isSavingColumn ? "Creating" : "Add desk"}
                     </button>
                   </form>
                 )}
               </div>
             )}
           </Droppable>
+              </div>
+            </section>
+          </div>
         </main>
       </DragDropContext>
       ) : (
@@ -2278,7 +2553,12 @@ export function BoardWorkspace({
                 </span>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className={innerCardClass}>
+                  <p className="text-xs font-medium text-slate-500">Waiting in Intake</p>
+                  <p className="mt-2 text-2xl font-bold text-blue-700">{displayIntakeTasks}</p>
+                  <p className="mt-1 text-xs text-slate-500">Not placed on a desk yet</p>
+                </div>
                 <div className={innerCardClass}>
                   <p className="text-xs font-medium text-slate-500">Total tasks</p>
                   <p className="mt-2 text-2xl font-bold text-slate-900">{displayTotalTasks}</p>
@@ -2496,7 +2776,7 @@ export function BoardWorkspace({
       )}
 
       {isSettingsOpen && (
-        <div className="tm-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="tm-modal-backdrop fixed inset-0 z-[200] flex items-center justify-center p-4">
           <form
             onSubmit={handleSaveSettings}
             className="tm-modal tm-pop-in w-full max-w-lg bg-white p-5"
@@ -2504,7 +2784,7 @@ export function BoardWorkspace({
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Board settings
+                  Workspace settings
                 </p>
                 <h2 className="mt-1 text-xl font-bold text-slate-950">Workspace details</h2>
               </div>
@@ -2561,6 +2841,7 @@ export function BoardWorkspace({
           key={selectedTask.id}
           task={selectedTask}
           members={boardMembers}
+          locations={columns}
           comments={taskComments}
           attachments={taskAttachments}
           onClose={() => {

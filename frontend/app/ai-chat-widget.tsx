@@ -311,12 +311,12 @@ export default function AiChatWidget() {
     }
   };
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated || !boardId) return null;
 
   return (
     <>
       {isOpen && (
-        <section className="tm-ai-panel tm-slide-up fixed bottom-20 right-5 z-[120] flex h-[min(760px,calc(100vh-120px))] w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden border bg-white text-slate-900">
+        <section className="tm-ai-panel tm-slide-up fixed bottom-32 right-5 z-[120] flex h-[min(760px,calc(100vh-160px))] w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden border bg-white text-slate-900">
           <header className="flex items-start justify-between gap-3 border-b border-slate-200 bg-gradient-to-r from-slate-950 to-blue-950 px-4 py-3 text-white">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-blue-200">
@@ -444,10 +444,24 @@ export default function AiChatWidget() {
       <button
         type="button"
         onClick={() => setIsOpen((currentValue) => !currentValue)}
-        className="tm-ai-fab fixed bottom-5 right-5 z-[120] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-sm font-black text-white ring-4 ring-blue-100 transition hover:bg-blue-500"
+        className="tm-martin-terminal fixed bottom-4 right-5 z-[120] text-left"
         aria-label="Open AI assistant"
+        aria-expanded={isOpen}
       >
-        AI
+        <span className="tm-martin-terminal-shell block">
+          <span className="tm-martin-screen block">
+            <span className="block text-[8px] font-black tracking-[0.12em] text-blue-300">
+              ASK MARTIN
+            </span>
+            <span className="mt-1 block text-[7px] font-bold text-blue-200">
+              {isSending ? "THINKING..." : isOpen ? "ONLINE" : "READY >_"}
+            </span>
+          </span>
+          <span className="tm-martin-console flex items-center justify-between">
+            <span className="tm-martin-grille" />
+            <span className="tm-martin-key" />
+          </span>
+        </span>
       </button>
     </>
   );

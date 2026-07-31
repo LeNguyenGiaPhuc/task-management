@@ -494,6 +494,266 @@ button:disabled {
 .tm-workflow-card .text-white { color: #0f172a !important; }
 .tm-command-landing > footer { border-top-color: rgba(148, 163, 184, 0.30); }
 
+/* Focus workspace controls */
+.tm-workspace-controls {
+  overscroll-behavior: contain;
+  scrollbar-color: #60a5fa #dbeafe;
+  scrollbar-width: thin;
+}
+
+.tm-controls-trigger {
+  min-height: 74px;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.tm-controls-trigger:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.tm-task-tray-panel {
+  height: calc(100vh - 106px);
+  max-height: 760px;
+}
+
+.tm-tray-dropzone {
+  scrollbar-color: #60a5fa #dbeafe;
+  scrollbar-width: thin;
+}
+
+.tm-task-drag-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.tm-task-drag-handle:active {
+  cursor: grabbing;
+}
+
+.tm-tray-draft,
+.tm-desk-task {
+  cursor: pointer;
+}
+
+/* Martin CRT assistant */
+.tm-martin-terminal {
+  filter: drop-shadow(8px 10px 12px rgba(15, 23, 42, 0.24));
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+.tm-martin-terminal:hover {
+  filter: drop-shadow(10px 13px 14px rgba(30, 64, 175, 0.28));
+  transform: translateY(-2px);
+}
+
+.tm-martin-terminal-shell {
+  width: 94px;
+  border: 2px solid #64748b;
+  border-bottom-width: 5px;
+  background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 55%, #94a3b8 100%);
+  padding: 8px 8px 6px;
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.9);
+}
+
+.tm-martin-screen {
+  min-height: 48px;
+  border: 5px solid #334155;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(96, 165, 250, 0.05) 0,
+      rgba(96, 165, 250, 0.05) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    #071426;
+  padding: 7px 6px;
+  box-shadow:
+    inset 0 0 14px rgba(37, 99, 235, 0.45),
+    0 0 0 1px #0f172a;
+}
+
+.tm-martin-console {
+  margin-top: 6px;
+  height: 10px;
+}
+
+.tm-martin-grille {
+  display: block;
+  width: 46px;
+  height: 6px;
+  background: repeating-linear-gradient(90deg, #475569 0 2px, transparent 2px 4px);
+}
+
+.tm-martin-key {
+  display: block;
+  width: 20px;
+  height: 6px;
+  border: 1px solid #1d4ed8;
+  background: #3b82f6;
+  box-shadow: 1px 1px 0 #1e3a8a;
+}
+
+@media (max-width: 1279px) {
+  .tm-task-tray-panel {
+    height: min(620px, 74vh);
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .tm-workspace-controls {
+    width: calc(100vw - 12px);
+    padding: 16px;
+  }
+
+  .tm-controls-trigger {
+    min-height: 60px;
+    padding: 10px 6px;
+  }
+
+  .tm-martin-terminal-shell {
+    width: 76px;
+    padding: 6px;
+  }
+
+  .tm-martin-screen {
+    min-height: 40px;
+    border-width: 4px;
+    padding: 5px 4px;
+  }
+}
+
+/* Workspace desk floor */
+.tm-desk-board-canvas {
+  min-height: calc(100vh - 65px);
+  background:
+    linear-gradient(rgba(37, 99, 235, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, #f8fbff 0%, #eaf3ff 100%);
+  background-size: 32px 32px, 32px 32px, auto;
+}
+
+.tm-desk-workspace-layout {
+  align-items: start;
+}
+
+.tm-task-tray-panel {
+  position: sticky;
+  top: 86px;
+  overflow: hidden;
+  border-color: #93c5fd;
+  background: rgba(239, 246, 255, 0.96);
+  box-shadow: 8px 8px 0 rgba(37, 99, 235, 0.12);
+}
+
+.tm-tray-dropzone {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(219, 234, 254, 0.64) 0,
+      rgba(219, 234, 254, 0.64) 10px,
+      rgba(239, 246, 255, 0.72) 10px,
+      rgba(239, 246, 255, 0.72) 20px
+    );
+}
+
+.tm-tray-draft {
+  cursor: grab;
+  border-color: #bfdbfe;
+  background: #ffffff;
+  box-shadow: 4px 4px 0 rgba(37, 99, 235, 0.12);
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.tm-tray-draft:hover {
+  border-color: #3b82f6;
+  box-shadow: 6px 6px 0 rgba(37, 99, 235, 0.16);
+  transform: translate(-1px, -1px);
+}
+
+.tm-work-desk {
+  position: relative;
+  overflow: visible;
+  border-color: #93c5fd;
+  background: #fffdf7;
+  box-shadow:
+    8px 10px 0 #c9dcf6,
+    0 22px 42px rgba(30, 64, 175, 0.12);
+}
+
+.tm-work-desk::before,
+.tm-work-desk::after {
+  position: absolute;
+  bottom: -18px;
+  z-index: -1;
+  height: 18px;
+  width: 12px;
+  background: #9eb9dd;
+  content: "";
+}
+
+.tm-work-desk::before {
+  left: 22px;
+}
+
+.tm-work-desk::after {
+  right: 14px;
+}
+
+.tm-desk-header {
+  border-color: #bfdbfe;
+  background:
+    linear-gradient(90deg, rgba(190, 242, 100, 0.36) 0 6px, transparent 6px),
+    #f8fbff;
+}
+
+.tm-desk-surface {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.16) 1px, transparent 1.2px),
+    linear-gradient(180deg, #fffef9, #f8fbff);
+  background-size: 18px 18px, auto;
+}
+
+.tm-desk-task {
+  cursor: grab;
+  border-color: #cbd5e1;
+  background: #fffef8;
+  box-shadow: 3px 3px 0 rgba(30, 64, 175, 0.11);
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.tm-desk-task:hover {
+  border-color: #60a5fa;
+  box-shadow: 5px 5px 0 rgba(30, 64, 175, 0.15);
+  transform: translate(-1px, -1px);
+}
+
+.tm-desk-empty {
+  border-color: #93c5fd;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.tm-desk-footer {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.tm-add-desk {
+  border-color: #93c5fd;
+  border-style: dashed;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 6px 6px 0 rgba(37, 99, 235, 0.08);
+}
+
+@media (max-width: 1279px) {
+  .tm-task-tray-panel {
+    position: static;
+    min-height: auto;
+  }
+}
+
 /* Light command-center variant */
 .tm-command-landing {
   background:

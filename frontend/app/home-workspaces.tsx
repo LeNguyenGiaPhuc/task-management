@@ -9,6 +9,7 @@ import LandingAuth from "./landing-auth";
 
 type BoardColumnSummary = {
   id: string;
+  is_intake?: boolean;
   tasks?: { id: string }[];
 };
 
@@ -28,6 +29,7 @@ type WorkspaceAnalytics = {
   summary: {
     boards: number;
     columns: number;
+    intake_tasks: number;
     total_tasks: number;
     open_tasks: number;
     done_tasks: number;
@@ -133,7 +135,8 @@ export default function HomeWorkspaces() {
 
   const totalTasks = boards.reduce((total, board) => total + getTaskCount(board), 0);
   const totalColumns = boards.reduce(
-    (total, board) => total + (board.columns?.length || 0),
+    (total, board) =>
+      total + (board.columns || []).filter((column) => !column.is_intake).length,
     0
   );
   const workspaceSummary = workspaceAnalytics?.summary;
@@ -451,8 +454,9 @@ export default function HomeWorkspaces() {
 
   return (
     <main className="tm-shell tm-dashboard-shell min-h-screen text-slate-900">
-      <div className="grid min-h-screen md:grid-cols-[240px_1fr]">
-        <aside className="tm-sidebar sticky top-0 hidden h-screen overflow-y-auto border-r px-3 py-4 md:block">
+      <div className={`grid min-h-screen ${selectedBoard ? "grid-cols-1" : "md:grid-cols-[240px_1fr]"}`}>
+        {!selectedBoard && (
+          <aside className="tm-sidebar sticky top-0 hidden h-screen overflow-y-auto border-r px-3 py-4 md:block">
           <div className="tm-sidebar-brand mb-4 flex items-center gap-3">
             <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">MD</span>
             <div className="min-w-0">
@@ -544,55 +548,96 @@ export default function HomeWorkspaces() {
               ))}
             </div>
           </div>
-        </aside>
+          </aside>
+        )}
 
         <section className="min-w-0">
           <header className="tm-topbar sticky top-0 z-20 border-b px-5 py-3">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="md:hidden">
-                  <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">MD</span>
+            {selectedBoard ? (
+              <div className="flex min-h-9 flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBoardId(null)}
+                    className="tm-button-secondary h-9 border px-3 text-xs font-black uppercase tracking-[0.12em] text-slate-700"
+                  >
+                    ← All workspaces
+                  </button>
+                  <div className="hidden h-6 w-px bg-blue-200 sm:block" />
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-blue-600">
+                      Active workspace
+                    </p>
+                    <p className="truncate text-sm font-black text-slate-950">
+                      {selectedBoard.title}
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search boards"
-                    className="tm-input h-9 w-full max-w-2xl border px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
-                  />
-                </div>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <CreateBoardButton
-                  onCreated={async (board) => {
-                    await Promise.all([loadBoards(), loadWorkspaceAnalytics()]);
-                    setActiveSidebarItem("Spaces");
-                    setIsSpacesOpen(true);
-                    setSelectedBoardId(board.id);
-                  }}
-                />
-                <div className="tm-button-secondary hidden h-8 items-center px-3 text-xs font-medium text-slate-600 sm:flex">
-                  {currentUser.email}
+                <div className="flex items-center gap-2">
+                  <div className="tm-button-secondary hidden h-8 items-center px-3 text-xs font-medium text-slate-600 sm:flex">
+                    {currentUser.email}
+                  </div>
+                  <div className="flex h-8 w-8 items-center justify-center bg-slate-900 text-xs font-bold text-white">
+                    {currentUser.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="tm-button-secondary h-9 px-3 text-sm font-medium text-slate-600"
+                  >
+                    Logout
+                  </button>
                 </div>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-white">
-                  {currentUser.name.slice(0, 2).toUpperCase()}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="tm-button-secondary h-9 px-3 text-sm font-medium text-slate-600"
-                >
-                  Logout
-                </button>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="md:hidden">
+                    <span className="tm-brand-mark flex h-9 w-9 items-center justify-center rounded-xl text-[11px] font-black text-white">MD</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Search boards"
+                      className="tm-input h-9 w-full max-w-2xl border px-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <CreateBoardButton
+                    onCreated={async (board) => {
+                      await Promise.all([loadBoards(), loadWorkspaceAnalytics()]);
+                      setActiveSidebarItem("Spaces");
+                      setIsSpacesOpen(true);
+                      setSelectedBoardId(board.id);
+                    }}
+                  />
+                  <div className="tm-button-secondary hidden h-8 items-center px-3 text-xs font-medium text-slate-600 sm:flex">
+                    {currentUser.email}
+                  </div>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-white">
+                    {currentUser.name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="tm-button-secondary h-9 px-3 text-sm font-medium text-slate-600"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
           </header>
 
           <div className="px-5 py-5">
             {selectedBoard ? (
               <div className="-mx-5 -my-5 min-h-[calc(100vh-65px)]">
                 <BoardWorkspace
+                  key={selectedBoard.id}
                   id={selectedBoard.id}
                   embedded
                 />
@@ -710,7 +755,9 @@ export default function HomeWorkspaces() {
                       <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
                         <div className="rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2">
                           <p className="text-xs text-slate-500">Columns</p>
-                          <p className="mt-1 font-semibold text-slate-900">{board.columns?.length || 0}</p>
+                          <p className="mt-1 font-semibold text-slate-900">
+                            {(board.columns || []).filter((column) => !column.is_intake).length}
+                          </p>
                         </div>
                         <div className="rounded-md border border-slate-200 bg-slate-50/80 px-3 py-2">
                           <p className="text-xs text-slate-500">Tasks</p>
