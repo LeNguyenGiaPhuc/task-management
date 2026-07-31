@@ -428,9 +428,490 @@ button:disabled {
   }
 }
 
+/* Final light palette overrides for the command-center landing */
+.tm-command-landing {
+  background:
+    radial-gradient(circle at 82% 12%, rgba(191, 219, 254, 0.74), transparent 29%),
+    radial-gradient(circle at 8% 72%, rgba(217, 249, 157, 0.34), transparent 23%),
+    linear-gradient(135deg, #f8fbff 0%, #edf5ff 54%, #f8fafc 100%);
+  color: #0f172a;
+}
+
+.tm-command-noise {
+  opacity: 0.52;
+  background-image: linear-gradient(rgba(37, 99, 235, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(37, 99, 235, 0.07) 1px, transparent 1px);
+}
+
+.tm-command-glow { border-color: rgba(37, 99, 235, 0.16); }
+.tm-command-glow-one { box-shadow: 0 0 100px rgba(37, 99, 235, 0.10); }
+.tm-command-glow-two { border-color: rgba(132, 204, 22, 0.19); }
+.tm-command-nav { border-bottom-color: rgba(148, 163, 184, 0.28); }
+
+.tm-command-mark {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #ffffff;
+  box-shadow: 5px 5px 0 rgba(37, 99, 235, 0.14);
+}
+
+.tm-command-ghost { color: #475569 !important; }
+.tm-command-ghost:hover { color: #0f172a !important; }
+.tm-command-cta { background: #bef264; color: #172554 !important; box-shadow: 4px 4px 0 rgba(37, 99, 235, 0.13); }
+.tm-command-link { color: #475569 !important; }
+.tm-command-link:hover { color: #0f172a !important; }
+.tm-command-outline { -webkit-text-stroke-color: #2563eb; }
+
+.tm-command-landing .text-white { color: #0f172a !important; }
+.tm-command-landing .text-slate-400 { color: #475569 !important; }
+.tm-command-landing .text-slate-500 { color: #64748b !important; }
+.tm-command-landing .text-slate-600 { color: #94a3b8 !important; }
+.tm-command-landing .text-lime-300 { color: #4d7c0f !important; }
+
+.tm-command-room {
+  border-color: rgba(96, 165, 250, 0.48);
+  background: rgba(255, 255, 255, 0.90);
+  box-shadow: 20px 20px 0 rgba(37, 99, 235, 0.10), 0 30px 80px rgba(30, 64, 175, 0.16);
+}
+
+.tm-command-room::before { background: linear-gradient(135deg, rgba(190, 242, 100, 0.12), transparent 34%, rgba(96, 165, 250, 0.13)); }
+.tm-room-header, .tm-room-footer { border-color: rgba(148, 163, 184, 0.24) !important; }
+.tm-room-header .text-slate-300, .tm-room-footer .text-slate-300 { color: #334155 !important; }
+
+.tm-signal-panel, .tm-signal-stat, .tm-task-stack, .tm-command-task {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(248, 250, 252, 0.82);
+}
+
+.tm-signal-panel .text-slate-500, .tm-signal-stat .text-slate-500, .tm-task-stack .text-slate-500 { color: #64748b !important; }
+.tm-command-task .text-slate-200 { color: #1e293b !important; }
+.tm-signal-ring { border-color: rgba(37, 99, 235, 0.48); box-shadow: 0 0 0 12px rgba(37, 99, 235, 0.045), 0 0 0 28px rgba(190, 242, 100, 0.08), inset 0 0 35px rgba(37, 99, 235, 0.08); }
+.tm-signal-ring::before { border-color: rgba(37, 99, 235, 0.30); }
+.tm-signal-ring::after { border-color: rgba(132, 204, 22, 0.40); }
+.tm-command-task:hover { border-color: rgba(37, 99, 235, 0.56); background: #ffffff; }
+.tm-command-stamp { border-color: rgba(37, 99, 235, 0.24); color: #64748b !important; }
+.tm-workflow-card { background: rgba(255, 255, 255, 0.88); border-color: rgba(148, 163, 184, 0.28); }
+.tm-workflow-card:hover { background: #ffffff; }
+.tm-workflow-card .text-white { color: #0f172a !important; }
+.tm-command-landing > footer { border-top-color: rgba(148, 163, 184, 0.30); }
+
+/* Light command-center variant */
+.tm-command-landing {
+  background:
+    radial-gradient(circle at 82% 12%, rgba(191, 219, 254, 0.74), transparent 29%),
+    radial-gradient(circle at 8% 72%, rgba(217, 249, 157, 0.34), transparent 23%),
+    linear-gradient(135deg, #f8fbff 0%, #edf5ff 54%, #f8fafc 100%);
+  color: #0f172a;
+}
+
+.tm-command-noise {
+  opacity: 0.52;
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.07) 1px, transparent 1px);
+}
+
+.tm-command-glow {
+  border-color: rgba(37, 99, 235, 0.16);
+}
+
+.tm-command-glow-one {
+  box-shadow: 0 0 100px rgba(37, 99, 235, 0.10);
+}
+
+.tm-command-glow-two {
+  border-color: rgba(132, 204, 22, 0.19);
+}
+
+.tm-command-nav {
+  border-bottom-color: rgba(148, 163, 184, 0.28);
+}
+
+.tm-command-mark {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: #ffffff;
+  box-shadow: 5px 5px 0 rgba(37, 99, 235, 0.14);
+}
+
+.tm-command-ghost {
+  color: #475569 !important;
+}
+
+.tm-command-ghost:hover {
+  color: #0f172a !important;
+}
+
+.tm-command-cta {
+  background: #bef264;
+  color: #172554 !important;
+  box-shadow: 4px 4px 0 rgba(37, 99, 235, 0.13);
+}
+
+.tm-command-link {
+  color: #475569 !important;
+}
+
+.tm-command-link:hover {
+  color: #0f172a !important;
+}
+
+.tm-command-landing .text-white {
+  color: #0f172a !important;
+}
+
+.tm-command-landing .text-slate-400 {
+  color: #475569 !important;
+}
+
+.tm-command-landing .text-slate-500 {
+  color: #64748b !important;
+}
+
+.tm-command-landing .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+.tm-command-landing .text-lime-300 {
+  color: #4d7c0f !important;
+}
+
+.tm-command-outline {
+  -webkit-text-stroke-color: #2563eb;
+}
+
+.tm-command-room {
+  border-color: rgba(96, 165, 250, 0.48);
+  background: rgba(255, 255, 255, 0.90);
+  box-shadow: 20px 20px 0 rgba(37, 99, 235, 0.10), 0 30px 80px rgba(30, 64, 175, 0.16);
+}
+
+.tm-command-room::before {
+  background: linear-gradient(135deg, rgba(190, 242, 100, 0.12), transparent 34%, rgba(96, 165, 250, 0.13));
+}
+
+.tm-room-header,
+.tm-room-footer {
+  border-color: rgba(148, 163, 184, 0.24) !important;
+}
+
+.tm-room-header .text-slate-300,
+.tm-room-footer .text-slate-300 {
+  color: #334155 !important;
+}
+
+.tm-signal-panel,
+.tm-signal-stat,
+.tm-task-stack,
+.tm-command-task {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(248, 250, 252, 0.82);
+}
+
+.tm-signal-panel .text-slate-500,
+.tm-signal-stat .text-slate-500,
+.tm-task-stack .text-slate-500,
+.tm-command-task .text-slate-500 {
+  color: #64748b !important;
+}
+
+.tm-command-task .text-slate-200 {
+  color: #1e293b !important;
+}
+
+.tm-signal-ring {
+  border-color: rgba(37, 99, 235, 0.48);
+  box-shadow: 0 0 0 12px rgba(37, 99, 235, 0.045), 0 0 0 28px rgba(190, 242, 100, 0.08), inset 0 0 35px rgba(37, 99, 235, 0.08);
+}
+
+.tm-signal-ring::before {
+  border-color: rgba(37, 99, 235, 0.30);
+}
+
+.tm-signal-ring::after {
+  border-color: rgba(132, 204, 22, 0.40);
+}
+
+.tm-command-task:hover {
+  border-color: rgba(37, 99, 235, 0.56);
+  background: #ffffff;
+}
+
+.tm-command-stamp {
+  border-color: rgba(37, 99, 235, 0.24);
+  color: #64748b !important;
+}
+
+.tm-workflow-card {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.tm-workflow-card:hover {
+  background: #ffffff;
+}
+
+.tm-workflow-card .text-white {
+  color: #0f172a !important;
+}
+
+.tm-command-landing > footer {
+  border-top-color: rgba(148, 163, 184, 0.30);
+}
+
 /* MartinDesk uses a sharp, rectangular visual system across every screen. */
 *,
 *::before,
 *::after {
   border-radius: 0 !important;
 }
+
+/* MartinDesk command-center landing */
+.tm-command-landing {
+  position: relative;
+  background:
+    radial-gradient(circle at 72% 18%, rgba(30, 64, 175, 0.28), transparent 28%),
+    linear-gradient(135deg, #070d18 0%, #0a1424 52%, #08111e 100%);
+}
+
+.tm-command-noise {
+  opacity: 0.28;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 72%);
+}
+
+.tm-command-glow {
+  position: absolute;
+  border: 1px solid rgba(190, 242, 100, 0.16);
+  pointer-events: none;
+}
+
+.tm-command-glow-one {
+  width: 520px;
+  height: 520px;
+  right: -170px;
+  top: 190px;
+  transform: rotate(25deg);
+  box-shadow: 0 0 100px rgba(132, 204, 22, 0.06);
+}
+
+.tm-command-glow-two {
+  width: 260px;
+  height: 260px;
+  left: -130px;
+  bottom: 230px;
+  border-color: rgba(96, 165, 250, 0.13);
+  transform: rotate(45deg);
+}
+
+.tm-command-nav {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.tm-command-mark {
+  display: flex;
+  height: 38px;
+  width: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(190, 242, 100, 0.65);
+  color: #bef264;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: -0.08em;
+  box-shadow: 5px 5px 0 rgba(190, 242, 100, 0.16);
+}
+
+.tm-command-ghost {
+  border: 1px solid transparent;
+}
+
+.tm-command-cta {
+  background: #bef264;
+  box-shadow: 4px 4px 0 rgba(190, 242, 100, 0.16);
+}
+
+.tm-command-kicker {
+  border-left: 2px solid #bef264;
+  padding-left: 10px;
+}
+
+.tm-live-dot,
+.tm-room-indicator {
+  display: inline-block;
+  height: 7px;
+  width: 7px;
+  background: #bef264;
+  box-shadow: 0 0 12px rgba(190, 242, 100, 0.90);
+}
+
+.tm-command-outline {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(226, 232, 240, 0.68);
+}
+
+.tm-command-stage {
+  min-height: 520px;
+}
+
+.tm-command-room {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(10, 20, 36, 0.82);
+  box-shadow: 20px 20px 0 rgba(30, 64, 175, 0.12), 0 30px 80px rgba(0, 0, 0, 0.32);
+}
+
+.tm-command-room::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(190, 242, 100, 0.05), transparent 30%, rgba(59, 130, 246, 0.08));
+  content: "";
+  pointer-events: none;
+}
+
+.tm-room-indicator {
+  height: 6px;
+  width: 6px;
+}
+
+.tm-signal-panel,
+.tm-signal-stat,
+.tm-task-stack,
+.tm-command-task {
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.tm-signal-ring {
+  position: relative;
+  border: 1px solid rgba(190, 242, 100, 0.42);
+  box-shadow: 0 0 0 12px rgba(190, 242, 100, 0.035), 0 0 0 28px rgba(190, 242, 100, 0.025), inset 0 0 35px rgba(190, 242, 100, 0.08);
+}
+
+.tm-signal-ring::before,
+.tm-signal-ring::after {
+  position: absolute;
+  content: "";
+  border: 1px solid rgba(190, 242, 100, 0.25);
+}
+
+.tm-signal-ring::before {
+  inset: 12px;
+}
+
+.tm-signal-ring::after {
+  inset: 28px;
+  border-color: rgba(96, 165, 250, 0.30);
+}
+
+.tm-signal-bar,
+.tm-task-marker {
+  display: inline-block;
+}
+
+.tm-signal-lime,
+.tm-task-marker-lime {
+  background: #bef264;
+}
+
+.tm-signal-blue,
+.tm-task-marker-blue {
+  background: #60a5fa;
+}
+
+.tm-signal-orange,
+.tm-task-marker-orange {
+  background: #fb923c;
+}
+
+.tm-command-task {
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.tm-command-task:hover {
+  border-color: rgba(190, 242, 100, 0.48);
+  background: rgba(30, 41, 59, 0.75);
+  transform: translateX(4px);
+}
+
+.tm-command-stamp {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  transform: rotate(-4deg);
+}
+
+.tm-workflow-card {
+  min-height: 160px;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.tm-workflow-card:hover {
+  background: #101d32;
+  transform: translateY(-3px);
+}
+
+.tm-command-auth {
+  box-shadow: 12px 12px 0 rgba(190, 242, 100, 0.20), 0 30px 90px rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 640px) {
+  .tm-command-stage {
+    min-height: 0;
+  }
+
+  .tm-command-room {
+    box-shadow: 8px 8px 0 rgba(30, 64, 175, 0.12), 0 20px 55px rgba(0, 0, 0, 0.30);
+  }
+
+  .tm-signal-panel {
+    min-height: 280px;
+  }
+}
+
+/* Final light palette override */
+.tm-command-landing {
+  background:
+    radial-gradient(circle at 82% 12%, rgba(191, 219, 254, 0.74), transparent 29%),
+    radial-gradient(circle at 8% 72%, rgba(217, 249, 157, 0.34), transparent 23%),
+    linear-gradient(135deg, #f8fbff 0%, #edf5ff 54%, #f8fafc 100%);
+  color: #0f172a;
+}
+
+.tm-command-noise {
+  opacity: 0.52;
+  background-image: linear-gradient(rgba(37, 99, 235, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(37, 99, 235, 0.07) 1px, transparent 1px);
+}
+
+.tm-command-glow { border-color: rgba(37, 99, 235, 0.16); }
+.tm-command-glow-one { box-shadow: 0 0 100px rgba(37, 99, 235, 0.10); }
+.tm-command-glow-two { border-color: rgba(132, 204, 22, 0.19); }
+.tm-command-nav { border-bottom-color: rgba(148, 163, 184, 0.28); }
+.tm-command-mark { border-color: #2563eb; color: #2563eb; background: #ffffff; box-shadow: 5px 5px 0 rgba(37, 99, 235, 0.14); }
+.tm-command-ghost { color: #475569 !important; }
+.tm-command-ghost:hover { color: #0f172a !important; }
+.tm-command-cta { background: #bef264; color: #172554 !important; box-shadow: 4px 4px 0 rgba(37, 99, 235, 0.13); }
+.tm-command-link { color: #475569 !important; }
+.tm-command-link:hover { color: #0f172a !important; }
+.tm-command-outline { -webkit-text-stroke-color: #2563eb; }
+.tm-command-landing .text-white { color: #0f172a !important; }
+.tm-command-landing .text-slate-400 { color: #475569 !important; }
+.tm-command-landing .text-slate-500 { color: #64748b !important; }
+.tm-command-landing .text-slate-600 { color: #94a3b8 !important; }
+.tm-command-landing .text-lime-300 { color: #4d7c0f !important; }
+.tm-command-room { border-color: rgba(96, 165, 250, 0.48); background: rgba(255, 255, 255, 0.90); box-shadow: 20px 20px 0 rgba(37, 99, 235, 0.10), 0 30px 80px rgba(30, 64, 175, 0.16); }
+.tm-command-room::before { background: linear-gradient(135deg, rgba(190, 242, 100, 0.12), transparent 34%, rgba(96, 165, 250, 0.13)); }
+.tm-room-header, .tm-room-footer { border-color: rgba(148, 163, 184, 0.24) !important; }
+.tm-room-header .text-slate-300, .tm-room-footer .text-slate-300 { color: #334155 !important; }
+.tm-signal-panel, .tm-signal-stat, .tm-task-stack, .tm-command-task { border-color: rgba(148, 163, 184, 0.28); background: rgba(248, 250, 252, 0.82); }
+.tm-signal-panel .text-slate-500, .tm-signal-stat .text-slate-500, .tm-task-stack .text-slate-500 { color: #64748b !important; }
+.tm-command-task .text-slate-200 { color: #1e293b !important; }
+.tm-signal-ring { border-color: rgba(37, 99, 235, 0.48); box-shadow: 0 0 0 12px rgba(37, 99, 235, 0.045), 0 0 0 28px rgba(190, 242, 100, 0.08), inset 0 0 35px rgba(37, 99, 235, 0.08); }
+.tm-signal-ring::before { border-color: rgba(37, 99, 235, 0.30); }
+.tm-signal-ring::after { border-color: rgba(132, 204, 22, 0.40); }
+.tm-command-task:hover { border-color: rgba(37, 99, 235, 0.56); background: #ffffff; }
+.tm-command-stamp { border-color: rgba(37, 99, 235, 0.24); color: #64748b !important; }
+.tm-workflow-card { background: rgba(255, 255, 255, 0.88); border-color: rgba(148, 163, 184, 0.28); }
+.tm-workflow-card:hover { background: #ffffff; }
+.tm-workflow-card .text-white { color: #0f172a !important; }
+.tm-command-landing > footer { border-top-color: rgba(148, 163, 184, 0.30); }

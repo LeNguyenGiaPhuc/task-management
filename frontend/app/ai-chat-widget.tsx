@@ -148,6 +148,7 @@ function renderActionPreview(action: AiAction) {
 export default function AiChatWidget() {
   const pathname = usePathname();
   const boardIdFromPath = useMemo(() => getBoardIdFromPath(pathname || ""), [pathname]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeBoardId, setActiveBoardId] = useState("");
   const boardId = boardIdFromPath || activeBoardId;
   const [isOpen, setIsOpen] = useState(false);
@@ -161,6 +162,21 @@ export default function AiChatWidget() {
   ]);
   const [isSending, setIsSending] = useState(false);
   const [applyingMessageIndex, setApplyingMessageIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const syncAuthentication = () => {
+      const authenticated = Boolean(getAuthToken());
+      setIsAuthenticated(authenticated);
+      if (!authenticated) setIsOpen(false);
+    };
+
+    syncAuthentication();
+    window.addEventListener("task-manager:auth-changed", syncAuthentication);
+
+    return () => {
+      window.removeEventListener("task-manager:auth-changed", syncAuthentication);
+    };
+  }, []);
 
   useEffect(() => {
     const handleActiveBoardChange = (event: Event) => {
@@ -294,6 +310,8 @@ export default function AiChatWidget() {
       setApplyingMessageIndex(null);
     }
   };
+
+  if (!isAuthenticated) return null;
 
   return (
     <>

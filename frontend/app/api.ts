@@ -16,10 +16,12 @@ export function getAuthToken() {
 
 export function setAuthToken(token: string) {
   localStorage.setItem(AUTH_TOKEN_KEY, token);
+  window.dispatchEvent(new Event("task-manager:auth-changed"));
 }
 
 export function clearAuthToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  window.dispatchEvent(new Event("task-manager:auth-changed"));
 }
 
 export function authHeaders(extraHeaders?: HeadersInit): HeadersInit {
