@@ -53,6 +53,7 @@ const boardSummaryInclude = {
   columns: {
     select: {
       id: true,
+      is_intake: true,
       tasks: {
         where: { archived_at: null },
         select: { id: true },
@@ -183,6 +184,15 @@ router.post('/', async (req, res) => {
         },
       });
 
+      await tx.columns.create({
+        data: {
+          board_id: board.id,
+          title: 'Task Intake',
+          order: -1000000,
+          is_intake: true,
+        },
+      });
+
       return board;
     });
 
@@ -229,12 +239,17 @@ router.post('/:id/duplicate', async (req, res) => {
         },
       });
 
+      let hasIntakeColumn = false;
+
       for (const column of sourceBoard.columns) {
+        if (column.is_intake) hasIntakeColumn = true;
+
         const newColumn = await tx.columns.create({
           data: {
             board_id: board.id,
             title: column.title,
             order: column.order,
+            is_intake: Boolean(column.is_intake),
           },
         });
 
@@ -263,6 +278,17 @@ router.post('/:id/duplicate', async (req, res) => {
             });
           }
         }
+      }
+
+      if (!hasIntakeColumn) {
+        await tx.columns.create({
+          data: {
+            board_id: board.id,
+            title: 'Task Intake',
+            order: -1000000,
+            is_intake: true,
+          },
+        });
       }
 
       return board;

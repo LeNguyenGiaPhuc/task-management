@@ -120,10 +120,23 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { column_id, title, description, task_type, priority, assignee_id, due_date } = req.body;
+    const {
+      board_id,
+      column_id,
+      title,
+      description,
+      task_type,
+      priority,
+      assignee_id,
+      due_date,
+    } = req.body;
 
-    if (!column_id || !title || !title.trim()) {
-      return res.status(400).json({ error: 'Missing column_id or title' });
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: 'Missing title' });
+    }
+
+    if (!column_id && !board_id) {
+      return res.status(400).json({ error: 'Missing column_id or board_id' });
     }
 
     const taskType = task_type || 'TASK';
@@ -131,27 +144,34 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid task type' });
     }
 
-    const column = await prisma.columns.findUnique({
-      where: { id: column_id },
-      select: { board_id: true },
-    });
+    const column = column_id
+      ? await prisma.columns.findUnique({
+          where: { id: column_id },
+          select: { id: true, board_id: true, title: true, is_intake: true },
+        })
+      : await prisma.columns.findFirst({
+          where: { board_id, is_intake: true },
+          select: { id: true, board_id: true, title: true, is_intake: true },
+        });
 
     if (!column) {
-      return res.status(404).json({ error: 'Column not found' });
+      return res.status(404).json({
+        error: column_id ? 'Column not found' : 'Task Intake not found for this board',
+      });
     }
 
     const role = await requireBoardRole(req, res, column.board_id, ['MEMBER', 'ADMIN', 'OWNER']);
     if (!role) return;
 
     const lastTask = await prisma.tasks.findFirst({
-      where: { column_id, archived_at: null },
+      where: { column_id: column.id, archived_at: null },
       orderBy: { order: 'desc' },
     });
     const newOrder = lastTask ? lastTask.order + 1000 : 1000;
 
     const newTask = await prisma.tasks.create({
       data: {
-        column_id,
+        column_id: column.id,
         title: title.trim(),
         description: cleanText(description),
         task_type: taskType,
@@ -163,7 +183,13 @@ router.post('/', async (req, res) => {
       include: taskInclude,
     });
 
-    await logBoardActivity(column.board_id, `Created task ${newTask.title}`, req.user.id);
+    await logBoardActivity(
+      column.board_id,
+      column.is_intake
+        ? `Captured task ${newTask.title} in Task Intake`
+        : `Created task ${newTask.title} in ${column.title}`,
+      req.user.id
+    );
 
     res.status(201).json(newTask);
   } catch (error) {
@@ -275,6 +301,7 @@ router.put('/:id', async (req, res) => {
           select: {
             board_id: true,
             title: true,
+            is_intake: true,
             boards: {
               select: {
                 archived_at: true,
@@ -295,7 +322,7 @@ router.put('/:id', async (req, res) => {
     if (column_id !== undefined && column_id !== existingTask.column_id) {
       const destinationColumn = await prisma.columns.findUnique({
         where: { id: column_id },
-        select: { board_id: true },
+        select: { board_id: true, title: true, is_intake: true },
       });
 
       if (!destinationColumn || destinationColumn.board_id !== existingTask.columns.board_id) {
@@ -313,9 +340,15 @@ router.put('/:id', async (req, res) => {
     if (column_id !== undefined && column_id !== existingTask.column_id) {
       const destinationColumn = await prisma.columns.findUnique({
         where: { id: column_id },
-        select: { title: true },
+        select: { title: true, is_intake: true },
       });
-      actionText = `Moved task ${updatedTask.title} to ${destinationColumn?.title || 'another column'}`;
+      if (destinationColumn?.is_intake) {
+        actionText = `Moved task ${updatedTask.title} back to Task Intake`;
+      } else if (existingTask.columns.is_intake) {
+        actionText = `Moved task ${updatedTask.title} from Task Intake to ${destinationColumn?.title || 'another desk'}`;
+      } else {
+        actionText = `Moved task ${updatedTask.title} to ${destinationColumn?.title || 'another desk'}`;
+      }
     } else if (assignee_id !== undefined) {
       actionText = updatedTask.users
         ? `Assigned task ${updatedTask.title} to ${updatedTask.users.name}`

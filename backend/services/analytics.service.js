@@ -34,12 +34,15 @@ function createCountMap(items) {
 
 function buildBoardAnalytics(board) {
   const columns = board.columns || [];
+  const deskColumns = columns.filter((column) => !column.is_intake);
+  const intakeColumn = columns.find((column) => column.is_intake);
   const members = board.board_members || [];
   const tasks = columns.flatMap((column) =>
     (column.tasks || []).map((task) => ({
       ...task,
       column_title: column.title,
-      is_done: isDoneColumn(column.title),
+      is_intake: Boolean(column.is_intake),
+      is_done: !column.is_intake && isDoneColumn(column.title),
     }))
   );
 
@@ -103,7 +106,8 @@ function buildBoardAnalytics(board) {
       description: board.description,
     },
     summary: {
-      columns: columns.length,
+      columns: deskColumns.length,
+      intake_tasks: intakeColumn?.tasks?.length || 0,
       total_tasks: totalTasks,
       open_tasks: openTasks,
       done_tasks: doneTasks,
@@ -130,7 +134,7 @@ function buildBoardAnalytics(board) {
       scheduled: scheduledTasks,
       no_due: noDueTasks,
     },
-    columns: columns.map((column) => ({
+    columns: deskColumns.map((column) => ({
       id: column.id,
       title: column.title,
       task_count: column.tasks?.length || 0,
@@ -156,6 +160,7 @@ function buildWorkspaceAnalytics(boards) {
   const totals = boardAnalytics.reduce(
     (result, item) => {
       result.columns += item.summary.columns;
+      result.intake_tasks += item.summary.intake_tasks;
       result.total_tasks += item.summary.total_tasks;
       result.open_tasks += item.summary.open_tasks;
       result.done_tasks += item.summary.done_tasks;
@@ -169,6 +174,7 @@ function buildWorkspaceAnalytics(boards) {
     },
     {
       columns: 0,
+      intake_tasks: 0,
       total_tasks: 0,
       open_tasks: 0,
       done_tasks: 0,

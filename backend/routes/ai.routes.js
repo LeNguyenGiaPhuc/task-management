@@ -53,6 +53,7 @@ function summarizeBoard(board) {
     (column.tasks || []).map((task) => ({
       ...summarizeTask(task),
       column: column.title,
+      is_intake: Boolean(column.is_intake),
     }))
   );
 
@@ -63,6 +64,7 @@ function summarizeBoard(board) {
     columns: columns.map((column) => ({
       id: column.id,
       title: column.title,
+      is_intake: Boolean(column.is_intake),
       task_count: column.tasks?.length || 0,
     })),
     members: (board.board_members || []).map((member) => ({
@@ -136,6 +138,7 @@ async function buildWorkspaceContext(userId, boardId) {
         board_id: board.id,
         board: board.title,
         column: column.title,
+        is_intake: Boolean(column.is_intake),
         due_status: getDueStatus(task.due_date),
       }))
     )
@@ -148,10 +151,13 @@ async function buildWorkspaceContext(userId, boardId) {
       id: board.id,
       title: board.title,
       description: board.description || '',
-      column_count: board.columns.length,
+      column_count: board.columns.filter((column) => !column.is_intake).length,
+      intake_task_count:
+        board.columns.find((column) => column.is_intake)?.tasks.length || 0,
       columns: board.columns.map((column) => ({
         id: column.id,
         title: column.title,
+        is_intake: Boolean(column.is_intake),
         task_count: column.tasks.length,
       })),
       task_count: board.columns.reduce((total, column) => total + column.tasks.length, 0),

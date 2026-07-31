@@ -1,4 +1,4 @@
-require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 
@@ -8,19 +8,9 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('Dang ket noi den Supabase...');
 
-  const user = await prisma.users.upsert({
-    where: { email: 'hello@test.com' },
-    update: { name: 'Test User' },
-    create: {
-      email: 'hello@test.com',
-      name: 'Test User',
-    },
-  });
-  console.log('Da tao/cap nhat user thanh cong:', user);
-
-  const allUsers = await prisma.users.findMany();
-  console.log('Danh sach users trong database:');
-  console.log(allUsers);
+  await prisma.$queryRaw`SELECT 1`;
+  const userCount = await prisma.users.count();
+  console.log(`Ket noi thanh cong. Database hien co ${userCount} users.`);
 }
 
 main()

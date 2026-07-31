@@ -65,15 +65,17 @@ async function ensureBoardMember({ boardId, userId, role }) {
   });
 }
 
-async function ensureColumn({ boardId, title, order }) {
+async function ensureColumn({ boardId, title, order, isIntake = false }) {
   const existingColumn = await prisma.columns.findFirst({
-    where: { board_id: boardId, title },
+    where: isIntake
+      ? { board_id: boardId, is_intake: true }
+      : { board_id: boardId, title, is_intake: false },
   });
 
   if (existingColumn) {
     return prisma.columns.update({
       where: { id: existingColumn.id },
-      data: { order },
+      data: { title, order, is_intake: isIntake },
     });
   }
 
@@ -82,6 +84,7 @@ async function ensureColumn({ boardId, title, order }) {
       board_id: boardId,
       title,
       order,
+      is_intake: isIntake,
     },
   });
 }
@@ -222,6 +225,7 @@ async function seed() {
   await ensureBoardMember({ boardId: jiraBoard.id, userId: designer.id, role: 'ADMIN' });
   await ensureBoardMember({ boardId: jiraBoard.id, userId: engineer.id, role: 'MEMBER' });
 
+  await ensureColumn({ boardId: jiraBoard.id, title: 'Task Intake', order: -1000000, isIntake: true });
   const backlog = await ensureColumn({ boardId: jiraBoard.id, title: 'Backlog', order: 1000 });
   const todo = await ensureColumn({ boardId: jiraBoard.id, title: 'To Do', order: 2000 });
   const progress = await ensureColumn({ boardId: jiraBoard.id, title: 'In Progress', order: 3000 });
@@ -406,6 +410,7 @@ async function seed() {
   await ensureBoardMember({ boardId: productBoard.id, userId: owner.id, role: 'OWNER' });
   await ensureBoardMember({ boardId: productBoard.id, userId: designer.id, role: 'MEMBER' });
 
+  await ensureColumn({ boardId: productBoard.id, title: 'Task Intake', order: -1000000, isIntake: true });
   const launchTodo = await ensureColumn({ boardId: productBoard.id, title: 'Launch To Do', order: 1000 });
   const launchDone = await ensureColumn({ boardId: productBoard.id, title: 'Launch Done', order: 2000 });
 

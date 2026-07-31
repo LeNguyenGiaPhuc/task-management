@@ -19,7 +19,7 @@ router.post('/', async (req, res) => {
     if (!role) return;
 
     const lastColumn = await prisma.columns.findFirst({
-      where: { board_id },
+      where: { board_id, is_intake: false },
       orderBy: { order: 'desc' },
     });
     const newOrder = lastColumn ? lastColumn.order + 1000 : 1000;
@@ -48,7 +48,7 @@ router.put('/:id', async (req, res) => {
 
     const existingColumn = await prisma.columns.findUnique({
       where: { id },
-      select: { board_id: true, title: true },
+      select: { board_id: true, title: true, is_intake: true },
     });
 
     if (!existingColumn) {
@@ -57,6 +57,10 @@ router.put('/:id', async (req, res) => {
 
     const role = await requireBoardRole(req, res, existingColumn.board_id, ['ADMIN', 'OWNER']);
     if (!role) return;
+
+    if (existingColumn.is_intake) {
+      return res.status(400).json({ error: 'Task Intake is a protected system column' });
+    }
 
     const data = {};
     if (title !== undefined) {
@@ -102,7 +106,7 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const column = await prisma.columns.findUnique({
       where: { id },
-      select: { board_id: true, title: true },
+      select: { board_id: true, title: true, is_intake: true },
     });
 
     if (!column) {
@@ -111,6 +115,10 @@ router.delete('/:id', async (req, res) => {
 
     const role = await requireBoardRole(req, res, column.board_id, ['ADMIN', 'OWNER']);
     if (!role) return;
+
+    if (column.is_intake) {
+      return res.status(400).json({ error: 'Task Intake cannot be deleted' });
+    }
 
     await prisma.columns.delete({ where: { id } });
     await logBoardActivity(column.board_id, `Deleted column ${column.title}`, req.user.id);
