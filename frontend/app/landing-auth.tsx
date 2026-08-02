@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 type AuthMode = "login" | "register";
 
@@ -23,22 +23,28 @@ type LandingAuthProps = {
   onErrorClear: () => void;
 };
 
-const deskSignals = [
-  { label: "Focus health", value: "84%", tone: "lime" },
-  { label: "Open threads", value: "07", tone: "blue" },
-  { label: "Due this week", value: "12", tone: "orange" },
+const workflowStages = [
+  { id: "intake", number: "01", label: "Intake", note: "Capture the work", tone: "lime" },
+  { id: "desk", number: "02", label: "Desk", note: "Place it where it belongs", tone: "blue" },
+  { id: "done", number: "03", label: "Done", note: "Close the loop", tone: "orange" },
 ];
 
-const deskTasks = [
-  { code: "MD-042", title: "Shape the release narrative", tag: "FOCUS", color: "lime" },
-  { code: "MD-039", title: "Review API boundary decisions", tag: "IN REVIEW", color: "blue" },
-  { code: "MD-035", title: "Map the next user journey", tag: "QUEUED", color: "orange" },
+const workflowTask = {
+  code: "MD-042",
+  title: "Review API boundary decisions",
+  detail: "Task / Medium",
+};
+
+const workflowSignals = [
+  { label: "One next move", value: "Visible", tone: "lime" },
+  { label: "Work location", value: "Clear", tone: "blue" },
+  { label: "Loop status", value: "Open", tone: "orange" },
 ];
 
 const workflow = [
-  ["01", "Frame", "Make the important work impossible to miss."],
-  ["02", "Move", "Give every task a clear next place to go."],
-  ["03", "Finish", "See momentum, risks, and the next best move."],
+  ["01", "Capture", "Put raw work in one visible place."],
+  ["02", "Place", "Drop each card on the desk where it belongs."],
+  ["03", "Advance", "Keep the next move clear until it is done."],
 ];
 
 export default function LandingAuth({
@@ -59,6 +65,8 @@ export default function LandingAuth({
   onPasswordChange,
   onErrorClear,
 }: LandingAuthProps) {
+  const [activeStageIndex, setActiveStageIndex] = useState(1);
+  const activeStage = workflowStages[activeStageIndex];
   const openAuth = (mode: AuthMode) => onOpen(mode);
   const closeAuth = () => {
     if (!isAuthenticating) onClose();
@@ -100,82 +108,93 @@ export default function LandingAuth({
             <span className="tm-command-outline">with intent.</span>
           </h1>
           <p className="mt-8 max-w-lg text-base leading-7 text-slate-400 sm:text-lg">
-            MartinDesk is the quiet control room behind your best work. Shape the signal, move the right task, and know what deserves your attention next.
+            MartinDesk is a quiet work floor for turning scattered requests into clear next moves. Capture the work, place it where it belongs, and keep momentum visible.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <button type="button" onClick={() => openAuth("register")} className="tm-command-cta px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-950 transition hover:bg-lime-300">Open your desk <span className="ml-3 text-base">→</span></button>
             <a href="#workflow" className="tm-command-link text-xs font-black uppercase tracking-[0.16em] text-slate-400 transition hover:text-white">See the method <span className="ml-2 text-lime-300">↘</span></a>
           </div>
           <div className="mt-12 flex items-center gap-4 border-t border-white/10 pt-5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-            <span className="text-lime-300">01</span>
-            <span>Less noise</span>
-            <span className="h-px w-8 bg-white/20" />
-            <span>More signal</span>
+            {workflowStages.map((stage, index) => (
+              <span key={stage.id} className="contents">
+                {index > 0 && <span className="h-px w-8 bg-white/20" />}
+                <span className={activeStageIndex === index ? "text-lime-300" : ""}>{stage.number}</span>
+                <span>{stage.label}</span>
+              </span>
+            ))}
           </div>
         </div>
 
         <div id="signals" className="tm-command-stage relative">
           <div className="tm-stage-label absolute -left-2 top-4 z-20 hidden -rotate-90 text-[9px] font-black uppercase tracking-[0.28em] text-slate-600 sm:block">LIVE DESK / 09:41</div>
-          <div className="tm-command-room">
+          <div className="tm-command-room tm-flow-room">
             <header className="tm-room-header flex items-center justify-between border-b border-white/10 px-5 py-4">
               <div className="flex items-center gap-3">
                 <span className="tm-room-indicator" />
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-lime-300">Desk online</p>
-                  <p className="mt-1 text-xs font-bold text-slate-300">Product launch / Q3</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-lime-300">Workflow online</p>
+                  <p className="mt-1 text-xs font-bold text-slate-300">One card / three clear places</p>
                 </div>
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-600">Tue / 30.07</span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-600">Live flow</span>
             </header>
 
-            <div className="grid gap-5 p-5 lg:grid-cols-[0.72fr_1.28fr] lg:p-7">
-              <div className="tm-signal-panel flex flex-col justify-between border border-white/10 p-5">
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Current signal</p>
-                  <div className="tm-signal-ring mx-auto mt-7 flex h-40 w-40 items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-4xl font-black tracking-[-0.08em] text-white">84</p>
-                      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-lime-300">focus health</p>
-                    </div>
-                  </div>
-                </div>
-                <p className="mt-6 border-t border-white/10 pt-4 text-[10px] leading-5 text-slate-500">Your board is moving cleanly. Two decisions are waiting for a signal.</p>
+            <div className="tm-flow-content p-5 lg:p-7">
+              <div className="tm-flow-path" role="tablist" aria-label="MartinDesk workflow stages">
+                {workflowStages.map((stage, index) => (
+                  <button
+                    key={stage.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeStageIndex === index}
+                    className={`tm-flow-stage tm-flow-stage-${stage.tone} ${activeStageIndex === index ? "is-active" : ""}`}
+                    onClick={() => setActiveStageIndex(index)}
+                  >
+                    <span className="tm-flow-stage-number">{stage.number}</span>
+                    <span>
+                      <span className="tm-flow-stage-label">{stage.label}</span>
+                      <span className="tm-flow-stage-note">{stage.note}</span>
+                    </span>
+                  </button>
+                ))}
               </div>
 
-              <div className="grid gap-3">
-                <div className="grid grid-cols-3 gap-2">
-                  {deskSignals.map((signal) => (
-                    <div key={signal.label} className="tm-signal-stat border border-white/10 p-3">
-                      <span className={`tm-signal-bar tm-signal-${signal.tone} mb-5 block h-1 w-7`} />
-                      <p className="text-xl font-black tracking-[-0.05em] text-white">{signal.value}</p>
-                      <p className="mt-1 text-[8px] font-bold uppercase leading-3 tracking-[0.12em] text-slate-500">{signal.label}</p>
+              <div className="tm-flow-board">
+                <div className="tm-flow-board-heading">
+                  <span>Interactive demo flow</span>
+                  <span>{activeStage.label} / ready</span>
+                </div>
+                <div className="tm-flow-track" aria-hidden="true"><span className="tm-flow-track-progress" style={{ width: `${activeStageIndex * 50}%` }} /></div>
+                <div className="tm-flow-card" data-stage={activeStage.id}>
+                  <div className="flex items-start gap-3">
+                    <span className={`tm-task-marker tm-task-marker-${activeStage.tone} mt-1 h-2 w-2 shrink-0`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-500">Work card / {activeStage.label}</p>
+                      <p className="mt-3 text-sm font-black text-slate-950">{workflowTask.title}</p>
+                      <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">{workflowTask.code} / {workflowTask.detail}</p>
+                    </div>
+                    <span className="tm-flow-card-arrow" aria-hidden="true">-&gt;</span>
+                  </div>
+                  <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-3 text-[9px] font-black uppercase tracking-[0.14em] text-slate-500">
+                    <span>{activeStage.note}</span>
+                    <span className="text-blue-600">Click a stage</span>
+                  </div>
+                </div>
+                <div className="tm-flow-signals">
+                  {workflowSignals.map((signal) => (
+                    <div key={signal.label} className="tm-flow-signal">
+                      <span className={`tm-signal-bar tm-signal-${signal.tone} block h-1 w-7`} />
+                      <span className="mt-3 block text-[11px] font-black text-slate-950">{signal.value}</span>
+                      <span className="mt-1 block text-[8px] font-bold uppercase tracking-[0.12em] text-slate-500">{signal.label}</span>
                     </div>
                   ))}
-                </div>
-                <div className="tm-task-stack border border-white/10 p-3">
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Attention queue</p>
-                    <span className="text-[9px] font-bold text-lime-300">03 items</span>
-                  </div>
-                  <div className="grid gap-2">
-                    {deskTasks.map((task) => (
-                      <div key={task.code} className="tm-command-task flex items-center gap-3 border border-white/10 px-3 py-3">
-                        <span className={`tm-task-marker tm-task-marker-${task.color} h-2 w-2 shrink-0`} />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[11px] font-bold text-slate-200">{task.title}</p>
-                          <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.14em] text-slate-600">{task.code}</p>
-                        </div>
-                        <span className="hidden text-[8px] font-black uppercase tracking-[0.1em] text-slate-500 sm:block">{task.tag}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
             </div>
 
             <footer className="tm-room-footer flex items-center justify-between border-t border-white/10 px-5 py-3 text-[9px] font-bold uppercase tracking-[0.16em] text-slate-600">
-              <span>AI is watching the edges</span>
-              <span className="text-lime-300">All systems clear / →</span>
+              <span>Work stays visible</span>
+              <span className="text-lime-300">Intake -&gt; desk -&gt; done</span>
             </footer>
           </div>
           <div className="tm-command-stamp absolute -bottom-7 -right-3 hidden px-3 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-slate-500 sm:block">MD / BUILD WITH INTENT</div>

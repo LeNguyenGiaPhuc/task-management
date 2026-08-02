@@ -783,6 +783,184 @@ button:disabled {
 .tm-workflow-card .text-white { color: #0f172a !important; }
 .tm-command-landing > footer { border-top-color: rgba(148, 163, 184, 0.30); }
 
+/* Landing workflow preview: show the product's real intake-to-done loop. */
+.tm-flow-room {
+  overflow: hidden;
+}
+
+.tm-flow-content {
+  background: rgba(248, 250, 252, 0.74);
+}
+
+.tm-flow-path {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tm-flow-path::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  right: 8%;
+  left: 8%;
+  height: 1px;
+  background: #cbd5e1;
+}
+
+.tm-flow-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+  color: #64748b;
+}
+
+.tm-flow-stage-number {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.tm-flow-stage-label,
+.tm-flow-stage-note {
+  display: block;
+}
+
+.tm-flow-stage-label {
+  margin-top: 2px;
+  color: #0f172a;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tm-flow-stage-note {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.tm-flow-stage.is-active .tm-flow-stage-number {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 4px 4px 0 rgba(37, 99, 235, 0.14);
+}
+
+.tm-flow-stage.is-active .tm-flow-stage-label {
+  color: #1d4ed8;
+}
+
+.tm-flow-board {
+  position: relative;
+  min-height: 276px;
+  margin-top: 26px;
+  overflow: hidden;
+  border: 1px solid #bfdbfe;
+  background-color: #f8fbff;
+  background-image: linear-gradient(rgba(37, 99, 235, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(37, 99, 235, 0.07) 1px, transparent 1px);
+  background-size: 20px 20px;
+  padding: 17px;
+}
+
+.tm-flow-board-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.tm-flow-board-heading span:last-child {
+  color: #2563eb;
+}
+
+.tm-flow-track {
+  position: absolute;
+  top: 74px;
+  right: 10%;
+  left: 10%;
+  height: 2px;
+  background: #dbeafe;
+}
+
+.tm-flow-track-progress {
+  display: block;
+  height: 100%;
+  background: #84cc16;
+  transition: width 260ms ease;
+}
+
+.tm-flow-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 360px);
+  margin: 66px auto 0;
+  border: 1px solid #93c5fd;
+  background: #fffef8;
+  padding: 18px;
+  box-shadow: 7px 7px 0 rgba(37, 99, 235, 0.12);
+  transition: transform 260ms ease, border-color 160ms ease;
+}
+
+.tm-flow-card[data-stage="intake"] { transform: translateX(-28%); border-color: #bef264; }
+.tm-flow-card[data-stage="desk"] { transform: translateX(0); border-color: #93c5fd; }
+.tm-flow-card[data-stage="done"] { transform: translateX(28%); border-color: #fdba74; }
+
+.tm-flow-card-arrow {
+  color: #2563eb;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.tm-flow-signals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.tm-flow-signal {
+  border-top: 1px solid #cbd5e1;
+  padding-top: 10px;
+}
+
+@media (max-width: 640px) {
+  .tm-flow-path { gap: 4px; }
+  .tm-flow-stage { display: block; }
+  .tm-flow-stage-number { margin-bottom: 7px; }
+  .tm-flow-stage-note { font-size: 9px; }
+  .tm-flow-card[data-stage="intake"],
+  .tm-flow-card[data-stage="desk"],
+  .tm-flow-card[data-stage="done"] { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tm-flow-stage-number,
+  .tm-flow-track-progress,
+  .tm-flow-card { transition: none; }
+}
+
 /* Focus workspace controls */
 .tm-workspace-controls {
   overscroll-behavior: contain;
