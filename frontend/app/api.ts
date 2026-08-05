@@ -1,5 +1,11 @@
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+
+// On Vercel, route requests through Next.js so the session cookie belongs to
+// martin desk's domain instead of depending on a third-party Render cookie.
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  process.env.NODE_ENV === "production" && configuredApiUrl
+    ? ""
+    : configuredApiUrl || "http://localhost:5000";
 export type AuthUser = {
   id: string;
   email: string;
