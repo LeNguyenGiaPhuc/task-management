@@ -240,6 +240,13 @@ function getInitialAuthError() {
   return getOAuthErrorMessage(new URLSearchParams(window.location.search).get("auth_error"));
 }
 
+class SessionExpiredError extends Error {
+  constructor() {
+    super("Your session has expired.");
+    this.name = "SessionExpiredError";
+  }
+}
+
 export default function HomeWorkspaces() {
   const router = useRouter();
   const [boards, setBoards] = useState<HomeBoard[]>([]);
@@ -248,7 +255,7 @@ export default function HomeWorkspaces() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => Boolean(getInitialAuthError()));
   const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -345,9 +352,7 @@ export default function HomeWorkspaces() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        notifyAuthChanged();
-        setCurrentUser(null);
-        return;
+        throw new SessionExpiredError();
       }
       throw new Error("Load boards failed");
     }
@@ -361,9 +366,7 @@ export default function HomeWorkspaces() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        notifyAuthChanged();
-        setCurrentUser(null);
-        return;
+        throw new SessionExpiredError();
       }
       throw new Error("Load archived boards failed");
     }
@@ -377,10 +380,7 @@ export default function HomeWorkspaces() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        notifyAuthChanged();
-        setCurrentUser(null);
-        setWorkspaceAnalytics(null);
-        return;
+        throw new SessionExpiredError();
       }
       setWorkspaceAnalytics(null);
       return;
@@ -408,6 +408,18 @@ export default function HomeWorkspaces() {
       notifyAuthChanged();
       await Promise.all([loadBoards(), loadArchivedBoards(), loadWorkspaceAnalytics()]);
     } catch (sessionError) {
+      if (sessionError instanceof SessionExpiredError) {
+        notifyAuthChanged();
+        setCurrentUser(null);
+        setBoards([]);
+        setArchivedBoards([]);
+        setWorkspaceAnalytics(null);
+        setAuthMode("login");
+        setIsAuthModalOpen(true);
+        setError("Your session expired. Please sign in again.");
+        return;
+      }
+
       console.error("Could not reach the backend while restoring the session.", sessionError);
       notifyAuthChanged();
       setCurrentUser(null);
@@ -468,7 +480,13 @@ export default function HomeWorkspaces() {
       setIsAuthModalOpen(false);
       await Promise.all([loadBoards(), loadArchivedBoards(), loadWorkspaceAnalytics()]);
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : "Could not authenticate.");
+      if (authError instanceof SessionExpiredError) {
+        setCurrentUser(null);
+        setIsAuthModalOpen(true);
+        setError("The login succeeded, but the session could not be restored. Please try again.");
+      } else {
+        setError(authError instanceof Error ? authError.message : "Could not authenticate.");
+      }
     } finally {
       setIsAuthenticating(false);
       setIsAuthChecked(true);
