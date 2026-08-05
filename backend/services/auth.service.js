@@ -22,6 +22,10 @@ async function ensureAuthColumn() {
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(50) DEFAULT 'PASSWORD';
   `);
+  await prisma.$executeRawUnsafe(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;
+  `);
 
   ensuredAuthColumn = true;
 }
@@ -42,6 +46,7 @@ function signToken(user) {
     {
       sub: user.id,
       email: user.email,
+      sessionVersion: user.session_version || 0,
     },
     JWT_SECRET,
     { expiresIn: TOKEN_EXPIRES_IN }
@@ -80,7 +85,7 @@ async function getUserWithPasswordByEmail(email) {
   await ensureAuthColumn();
   const users = await prisma.$queryRawUnsafe(
     `
-      SELECT id, email, name, avatar_url, password_hash
+      SELECT id, email, name, avatar_url, password_hash, session_version
       FROM users
       WHERE lower(email) = lower($1)
       LIMIT 1
@@ -103,7 +108,7 @@ async function upsertGoogleUser(profile) {
 
   const existingUsers = await prisma.$queryRawUnsafe(
     `
-      SELECT id, email, name, avatar_url, google_id, auth_provider
+      SELECT id, email, name, avatar_url, google_id, auth_provider, session_version
       FROM users
       WHERE lower(email) = lower($1)
       LIMIT 1
@@ -121,7 +126,7 @@ async function upsertGoogleUser(profile) {
           google_id = $4,
           auth_provider = 'GOOGLE'
         WHERE id = $1::uuid
-        RETURNING id, email, name, avatar_url
+        RETURNING id, email, name, avatar_url, session_version
       `,
       existingUsers[0].id,
       displayName,
@@ -129,14 +134,14 @@ async function upsertGoogleUser(profile) {
       profile.sub || profile.id || null
     );
 
-    return sanitizeUser(updatedUsers[0]);
+    return updatedUsers[0];
   }
 
   const users = await prisma.$queryRawUnsafe(
     `
       INSERT INTO users (email, name, avatar_url, google_id, auth_provider)
       VALUES ($1, $2, $3, $4, 'GOOGLE')
-      RETURNING id, email, name, avatar_url
+      RETURNING id, email, name, avatar_url, session_version
     `,
     normalizedEmail,
     displayName,
@@ -144,7 +149,7 @@ async function upsertGoogleUser(profile) {
     profile.sub || profile.id || null
   );
 
-  return sanitizeUser(users[0]);
+  return users[0];
 }
 
 module.exports = {

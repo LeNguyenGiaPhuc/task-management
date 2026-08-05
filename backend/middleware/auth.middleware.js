@@ -25,11 +25,16 @@ async function requireAuth(req, res, next) {
         email: true,
         name: true,
         avatar_url: true,
+        session_version: true,
       },
     });
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid session' });
+    }
+
+    if ((payload.sessionVersion || 0) !== user.session_version) {
+      return res.status(401).json({ error: 'Session has expired' });
     }
 
     req.user = sanitizeUser(user);

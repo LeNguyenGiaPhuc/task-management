@@ -10,6 +10,7 @@ This project is designed as a practical full-stack product for learning and inte
 
 - Email/password login and registration.
 - Google OAuth login.
+- Password reset by a six-digit email OTP (hashed, one-time, and expiring).
 - JWT-based authentication.
 - Board-level RBAC with:
   - `OWNER`
@@ -300,6 +301,17 @@ GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 GOOGLE_CALLBACK_URL="http://localhost:5000/api/auth/google/callback"
 
+# SMTP credentials for password-reset OTP delivery.
+# Gmail example: use an App Password, never your normal account password.
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=465
+SMTP_SECURE="true"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-16-character-app-password"
+SMTP_FROM="MartinDesk <your-email@gmail.com>"
+PASSWORD_RESET_OTP_TTL_MINUTES=10
+PASSWORD_RESET_OTP_MAX_ATTEMPTS=5
+
 GEMINI_API_KEY="your-gemini-api-key"
 GEMINI_MODEL="gemini-2.5-flash"
 ```
@@ -419,6 +431,8 @@ Default seed accounts:
 ```txt
 POST   /api/auth/register
 POST   /api/auth/login
+POST   /api/auth/forgot-password
+POST   /api/auth/reset-password
 GET    /api/auth/me
 GET    /api/auth/google
 GET    /api/auth/google/callback

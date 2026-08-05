@@ -79,7 +79,7 @@ type WorkspaceAnalytics = {
 };
 
 type SortMode = "recent" | "updated" | "az" | "za";
-type AuthMode = "login" | "register";
+type AuthMode = "login" | "register" | "forgot" | "reset";
 type DirectoryFilter = "ALL" | "ACTIVE" | "ARCHIVED";
 
 function getTaskCount(board: HomeBoard) {
@@ -259,6 +259,7 @@ export default function HomeWorkspaces() {
   const [authName, setAuthName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
+  const [authOtp, setAuthOtp] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [query, setQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("recent");
@@ -267,6 +268,7 @@ export default function HomeWorkspaces() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState(getInitialAuthError);
+  const [authNotice, setAuthNotice] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [restoringBoardId, setRestoringBoardId] = useState<string | null>(null);
@@ -457,14 +459,21 @@ export default function HomeWorkspaces() {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/${authMode}`, {
+      const endpoint =
+        authMode === "forgot"
+          ? "forgot-password"
+          : authMode === "reset"
+            ? "reset-password"
+            : authMode;
+      const response = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: authEmail.trim(),
-          password: authPassword,
+          ...(authMode !== "forgot" ? { password: authPassword } : {}),
           ...(authMode === "register" ? { name: authName.trim() } : {}),
+          ...(authMode === "reset" ? { otp: authOtp.trim() } : {}),
         }),
       });
 
@@ -473,7 +482,28 @@ export default function HomeWorkspaces() {
         throw new Error(data.error || "Authentication failed");
       }
 
-      const data = (await response.json()) as { user: AuthUser };
+      const data = (await response.json()) as { message?: string; user?: AuthUser };
+
+      if (authMode === "forgot") {
+        setAuthMode("reset");
+        setAuthOtp("");
+        setAuthPassword("");
+        setAuthNotice(data.message || "Check your email for a 6-digit reset OTP.");
+        return;
+      }
+
+      if (authMode === "reset") {
+        setAuthMode("login");
+        setAuthOtp("");
+        setAuthPassword("");
+        setAuthNotice(data.message || "Password reset. You can now sign in.");
+        return;
+      }
+
+      if (!data.user) {
+        throw new Error("Authentication response did not include a user");
+      }
+
       setCurrentUser(data.user);
       notifyAuthChanged();
       setAuthPassword("");
@@ -650,13 +680,16 @@ export default function HomeWorkspaces() {
         authName={authName}
         authEmail={authEmail}
         authPassword={authPassword}
+        authOtp={authOtp}
         isAuthenticating={isAuthenticating}
         error={error}
+        notice={authNotice}
         onAuthSubmit={handleAuthSubmit}
         onGoogleLogin={handleGoogleLogin}
         onOpen={(mode) => {
           setAuthMode(mode);
           setError("");
+          setAuthNotice("");
           setIsAuthModalOpen(true);
         }}
         onClose={() => setIsAuthModalOpen(false)}
@@ -664,7 +697,11 @@ export default function HomeWorkspaces() {
         onNameChange={setAuthName}
         onEmailChange={setAuthEmail}
         onPasswordChange={setAuthPassword}
-        onErrorClear={() => setError("")}
+        onOtpChange={setAuthOtp}
+        onErrorClear={() => {
+          setError("");
+          setAuthNotice("");
+        }}
       />
     );
   }
