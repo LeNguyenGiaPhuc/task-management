@@ -1,13 +1,13 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
-const { requireAuth, requireBoardRole } = require('../middleware/auth.middleware');
+const { requireAuth, requireBoardRole, requireTrustedOrigin } = require('../middleware/auth.middleware');
 const { generateChatActionProposal, generateSubTaskTitles } = require('../services/ai.service');
 const { logBoardActivity } = require('../services/activity.service');
 const { cleanText } = require('../utils/text');
 
 const router = express.Router();
 
-router.use(requireAuth);
+router.use(requireAuth, requireTrustedOrigin);
 
 function summarizeTask(task) {
   const subtasks = task.sub_tasks || [];

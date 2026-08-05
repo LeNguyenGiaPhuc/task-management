@@ -1,11 +1,11 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
-const { requireAuth, requireBoardRole } = require('../middleware/auth.middleware');
+const { requireAuth, requireBoardRole, requireTrustedOrigin } = require('../middleware/auth.middleware');
 const { logBoardActivity } = require('../services/activity.service');
 
 const router = express.Router();
 
-router.use(requireAuth);
+router.use(requireAuth, requireTrustedOrigin);
 
 router.post('/', async (req, res) => {
   try {

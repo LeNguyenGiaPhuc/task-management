@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { API_BASE_URL, apiFetch, clearAuthToken, setAuthToken, type AuthUser } from "./api";
+import { API_BASE_URL, apiFetch, notifyAuthChanged, type AuthUser } from "./api";
 import { BoardWorkspace } from "./boards/[id]/page";
 import CreateBoardButton from "./create-board-button";
 import LandingAuth from "./landing-auth";
@@ -345,7 +345,7 @@ export default function HomeWorkspaces() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        clearAuthToken();
+        notifyAuthChanged();
         setCurrentUser(null);
         return;
       }
@@ -361,7 +361,7 @@ export default function HomeWorkspaces() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        clearAuthToken();
+        notifyAuthChanged();
         setCurrentUser(null);
         return;
       }
@@ -377,7 +377,7 @@ export default function HomeWorkspaces() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        clearAuthToken();
+        notifyAuthChanged();
         setCurrentUser(null);
         setWorkspaceAnalytics(null);
         return;
@@ -395,7 +395,7 @@ export default function HomeWorkspaces() {
       const response = await apiFetch("/api/auth/me");
 
       if (!response.ok) {
-        clearAuthToken();
+        notifyAuthChanged();
         setCurrentUser(null);
         setBoards([]);
         setArchivedBoards([]);
@@ -405,10 +405,11 @@ export default function HomeWorkspaces() {
 
       const data = (await response.json()) as { user: AuthUser };
       setCurrentUser(data.user);
+      notifyAuthChanged();
       await Promise.all([loadBoards(), loadArchivedBoards(), loadWorkspaceAnalytics()]);
     } catch (sessionError) {
       console.error("Could not reach the backend while restoring the session.", sessionError);
-      clearAuthToken();
+      notifyAuthChanged();
       setCurrentUser(null);
       setBoards([]);
       setArchivedBoards([]);
@@ -423,18 +424,13 @@ export default function HomeWorkspaces() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const oauthToken = params.get("token");
     const authError = params.get("auth_error");
 
-    if (oauthToken || authError) {
+    if (authError) {
       window.history.replaceState({}, "", window.location.pathname);
     }
 
-    if (oauthToken) {
-      setAuthToken(oauthToken);
-    }
-
-    // Restore an existing local JWT session on first client render.
+    // Restore the existing HttpOnly cookie session on first client render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadSession();
   }, [loadSession]);
@@ -451,6 +447,7 @@ export default function HomeWorkspaces() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/${authMode}`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: authEmail.trim(),
@@ -464,9 +461,9 @@ export default function HomeWorkspaces() {
         throw new Error(data.error || "Authentication failed");
       }
 
-      const data = (await response.json()) as { token: string; user: AuthUser };
-      setAuthToken(data.token);
+      const data = (await response.json()) as { user: AuthUser };
       setCurrentUser(data.user);
+      notifyAuthChanged();
       setAuthPassword("");
       setIsAuthModalOpen(false);
       await Promise.all([loadBoards(), loadArchivedBoards(), loadWorkspaceAnalytics()]);
@@ -478,8 +475,12 @@ export default function HomeWorkspaces() {
     }
   };
 
-  const handleLogout = () => {
-    clearAuthToken();
+  const handleLogout = async () => {
+    try {
+      await apiFetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      notifyAuthChanged();
+    }
     setCurrentUser(null);
     setBoards([]);
     setArchivedBoards([]);
@@ -755,6 +756,7 @@ export default function HomeWorkspaces() {
                       Directory search
                     </p>
                     <input
+                      aria-label="Find a workspace by name"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
                       placeholder="Find a workspace by name"
@@ -854,6 +856,7 @@ export default function HomeWorkspaces() {
                   </button>
                 )}
                 <select
+                  aria-label="Sort workspaces"
                   value={sortMode}
                   onChange={(event) => setSortMode(event.target.value as SortMode)}
                   className="tm-input h-9 border px-3 text-sm text-slate-900 outline-none"
@@ -1005,7 +1008,7 @@ export default function HomeWorkspaces() {
                           Enter workspace →
                         </button>
                         <details className="tm-directory-actions relative">
-                          <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center border border-blue-200 bg-white text-base font-black text-blue-700">
+                          <summary aria-label="Open workspace actions" className="flex h-8 w-8 cursor-pointer list-none items-center justify-center border border-blue-200 bg-white text-base font-black text-blue-700">
                             ⋯
                           </summary>
                           <div className="absolute bottom-[calc(100%+6px)] right-0 z-20 grid w-36 border border-blue-200 bg-white p-1 shadow-xl">

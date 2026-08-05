@@ -278,9 +278,13 @@ Create `backend/.env`.
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 PORT=5000
+JWT_SECRET="use-a-long-random-secret-in-each-environment"
 
 FRONTEND_URL="http://localhost:3000"
 CORS_ORIGIN="http://localhost:3000,http://127.0.0.1:3000"
+NODE_ENV="development"
+# Set true in a HTTPS deployment. This makes the session cookie Secure and SameSite=None.
+COOKIE_SECURE="false"
 JSON_BODY_LIMIT="1mb"
 
 RATE_LIMIT_WINDOW_MS=900000

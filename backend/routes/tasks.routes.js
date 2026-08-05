@@ -3,7 +3,7 @@ const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
 const prisma = require('../lib/prisma');
-const { requireAuth, requireBoardRole } = require('../middleware/auth.middleware');
+const { requireAuth, requireBoardRole, requireTrustedOrigin } = require('../middleware/auth.middleware');
 const { logBoardActivity } = require('../services/activity.service');
 const { ensureTaskCommentsTable } = require('../services/comments.service');
 const { cleanText } = require('../utils/text');
@@ -26,7 +26,7 @@ const upload = multer({
   },
 });
 
-router.use(requireAuth);
+router.use(requireAuth, requireTrustedOrigin);
 
 const taskTypes = ['TASK', 'BUG', 'STORY', 'EPIC'];
 let ensuredTaskTypeColumn = false;

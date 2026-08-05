@@ -1,5 +1,7 @@
 const prisma = require('../lib/prisma');
 const { sanitizeUser, verifyToken } = require('../services/auth.service');
+const { getAllowedOrigins } = require('./security.middleware');
+const { getRequestToken, hasTrustedOrigin } = require('../utils/auth-session');
 
 const roleRank = {
   MEMBER: 1,
@@ -9,8 +11,7 @@ const roleRank = {
 
 async function requireAuth(req, res, next) {
   try {
-    const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const { source, token } = getRequestToken(req.headers);
 
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -32,10 +33,27 @@ async function requireAuth(req, res, next) {
     }
 
     req.user = sanitizeUser(user);
+    req.authSource = source;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' });
   }
+}
+
+function requireTrustedOrigin(req, res, next) {
+  const isStateChanging = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+
+  if (!isStateChanging || req.authSource !== 'cookie') {
+    next();
+    return;
+  }
+
+  if (!hasTrustedOrigin(req.headers, getAllowedOrigins())) {
+    res.status(403).json({ error: 'Untrusted request origin' });
+    return;
+  }
+
+  next();
 }
 
 async function getBoardRole(boardId, userId) {
@@ -75,4 +93,5 @@ module.exports = {
   getBoardRole,
   requireAuth,
   requireBoardRole,
+  requireTrustedOrigin,
 };

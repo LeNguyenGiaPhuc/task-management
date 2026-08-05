@@ -2,7 +2,7 @@
 
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { apiFetch, getAuthToken } from "./api";
+import { apiFetch } from "./api";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -166,20 +166,28 @@ export default function AiChatWidget() {
   const [applyingMessageIndex, setApplyingMessageIndex] = useState<number | null>(null);
 
   useEffect(() => {
-    const syncAuthentication = () => {
-      const authenticated = Boolean(getAuthToken());
-      setIsAuthenticated(authenticated);
-      if (!authenticated) {
+    const syncAuthentication = async () => {
+      try {
+        const response = await apiFetch("/api/auth/me");
+        const authenticated = response.ok;
+        setIsAuthenticated(authenticated);
+        if (!authenticated) {
+          setIsOpen(false);
+          setIsDockExpanded(false);
+        }
+      } catch {
+        setIsAuthenticated(false);
         setIsOpen(false);
         setIsDockExpanded(false);
       }
     };
 
-    syncAuthentication();
-    window.addEventListener("task-manager:auth-changed", syncAuthentication);
+    void syncAuthentication();
+    const handleAuthenticationChange = () => void syncAuthentication();
+    window.addEventListener("task-manager:auth-changed", handleAuthenticationChange);
 
     return () => {
-      window.removeEventListener("task-manager:auth-changed", syncAuthentication);
+      window.removeEventListener("task-manager:auth-changed", handleAuthenticationChange);
     };
   }, []);
 
@@ -226,7 +234,7 @@ export default function AiChatWidget() {
     const trimmedContent = content.trim();
     if (!trimmedContent || isSending) return;
 
-    if (!getAuthToken()) {
+    if (!isAuthenticated) {
       setIsOpen(true);
       setMessages((currentMessages) => [
         ...currentMessages,
@@ -451,6 +459,7 @@ export default function AiChatWidget() {
 
           <form onSubmit={handleSubmit} className="border-t border-slate-200 bg-slate-50/80 p-3">
             <textarea
+              aria-label="Ask AI about this workspace"
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               placeholder="Hoi AI ve board, task, sprint, risk..."

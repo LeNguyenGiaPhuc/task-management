@@ -6,7 +6,7 @@
   "scripts": {
     "seed": "node seed.js",
     "check:db": "node scripts/check-db-connection.js",
-    "test": "node --test tests/analytics.service.test.js"
+    "test": "node --test tests/*.test.js"
   },
   "keywords": [],
   "author": "",

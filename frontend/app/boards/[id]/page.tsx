@@ -635,6 +635,7 @@ function TaskDetailModal({
               >
                 <input
                   type="checkbox"
+                  aria-label={`Mark ${subTask.title} as complete`}
                   checked={Boolean(subTask.is_completed)}
                   onChange={() => onToggleSubTask(subTask)}
                   className="h-4 w-4 accent-slate-900"
@@ -659,6 +660,7 @@ function TaskDetailModal({
 
           <form onSubmit={handleCreateSubTask} className="flex gap-2">
             <input
+              aria-label="Add checklist item"
               value={subTaskTitle}
               onChange={(event) => setSubTaskTitle(event.target.value)}
               placeholder="Add checklist item"
@@ -686,6 +688,7 @@ function TaskDetailModal({
 
             <form onSubmit={handleCreateComment} className="mb-3 grid gap-2">
               <textarea
+                aria-label="Write a comment"
                 value={commentContent}
                 onChange={(event) => setCommentContent(event.target.value)}
                 placeholder="Write a comment"
@@ -1846,6 +1849,11 @@ export function BoardWorkspace({
   };
 
   const pageBackground = embedded ? "transparent" : getBoardPageBackground(boardBackground);
+  const openTaskInspector = (taskId: string) => {
+    setTaskComments([]);
+    setTaskAttachments([]);
+    setSelectedTaskId(taskId);
+  };
   const inputClass = "tm-input h-9 border px-3 text-sm text-slate-900 outline-none";
   const smallInputClass = "tm-input min-w-0 flex-1 border px-2 py-1.5 text-sm text-slate-900 outline-none";
   const innerCardClass = "rounded-md border border-slate-200 bg-white/80 px-3 py-2";
@@ -1962,12 +1970,14 @@ export function BoardWorkspace({
             </h2>
             <div className="grid gap-2 sm:grid-cols-2">
               <input
+                aria-label="Search tasks"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search tasks"
                 className={`${inputClass} sm:col-span-2`}
               />
               <select
+                aria-label="Filter by priority"
                 value={priorityFilter}
                 onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
                 className={inputClass}
@@ -1980,6 +1990,7 @@ export function BoardWorkspace({
                 ))}
               </select>
               <select
+                aria-label="Filter by assignee"
                 value={assigneeFilter}
                 onChange={(event) => setAssigneeFilter(event.target.value)}
                 className={inputClass}
@@ -1993,6 +2004,7 @@ export function BoardWorkspace({
                 ))}
               </select>
               <select
+                aria-label="Filter by due date"
                 value={dueFilter}
                 onChange={(event) => setDueFilter(event.target.value as DueFilter)}
                 className={inputClass}
@@ -2145,7 +2157,11 @@ export function BoardWorkspace({
                   onSubmit={handleSaveMember}
                   className="mb-2 grid gap-2 rounded-md border border-blue-200 bg-blue-50 p-2"
                 >
+                  <label htmlFor="editing-member-role" className="sr-only">
+                    Board role
+                  </label>
                   <select
+                    id="editing-member-role"
                     value={editingMemberRole}
                     onChange={(event) => setEditingMemberRole(event.target.value as EditableBoardRole)}
                     className={`${inputClass} h-9 px-2`}
@@ -2156,7 +2172,11 @@ export function BoardWorkspace({
                       </option>
                     ))}
                   </select>
+                  <label htmlFor="editing-member-project-role" className="sr-only">
+                    Project role
+                  </label>
                   <select
+                    id="editing-member-project-role"
                     value={editingMemberProjectRole}
                     onChange={(event) => setEditingMemberProjectRole(event.target.value)}
                     className={`${inputClass} h-9 px-2`}
@@ -2187,13 +2207,21 @@ export function BoardWorkspace({
 
               {canManageMembers ? (
                 <form onSubmit={handleAddMember} className="grid gap-2">
+                  <label htmlFor="member-name" className="sr-only">
+                    Member name
+                  </label>
                   <input
+                    id="member-name"
                     value={memberName}
                     onChange={(event) => setMemberName(event.target.value)}
                     placeholder="Member name"
                     className={`${inputClass} h-9 min-w-0 px-2`}
                   />
+                  <label htmlFor="member-project-role" className="sr-only">
+                    Project role
+                  </label>
                   <select
+                    id="member-project-role"
                     value={memberProjectRole}
                     onChange={(event) => setMemberProjectRole(event.target.value)}
                     className={`${inputClass} h-9 px-2`}
@@ -2257,10 +2285,11 @@ export function BoardWorkspace({
               </div>
 
               <form onSubmit={handleCreateTrayTask} className="border-b border-blue-200 bg-white p-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                <label htmlFor="tray-task-title" className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
                   Capture new work
                 </label>
                 <textarea
+                  id="tray-task-title"
                   value={trayTaskTitle}
                   onChange={(event) => setTrayTaskTitle(event.target.value)}
                   placeholder="What needs to be done?"
@@ -2296,16 +2325,17 @@ export function BoardWorkspace({
                           <article
                             ref={taskProvided.innerRef}
                             {...taskProvided.draggableProps}
-                            {...taskProvided.dragHandleProps}
-                            onClick={() => {
-                              setTaskComments([]);
-                              setTaskAttachments([]);
-                              setSelectedTaskId(task.id);
-                            }}
                             className={`tm-tray-draft border p-3 ${
                               taskSnapshot.isDragging ? "tm-dragging-card shadow-xl ring-2 ring-blue-400" : ""
                             }`}
                           >
+                            <button
+                              type="button"
+                              {...taskProvided.dragHandleProps}
+                              aria-label={`Open task: ${task.title}. Press Enter to edit or Space to drag.`}
+                              onClick={() => openTaskInspector(task.id)}
+                              className="block w-full text-left"
+                            >
                             <div className="flex items-start gap-3">
                               <span className="mt-1 h-2 w-2 shrink-0 bg-lime-400" />
                               <div className="min-w-0 flex-1">
@@ -2329,8 +2359,9 @@ export function BoardWorkspace({
                               </span>
                             </div>
                             <p className="mt-3 text-[9px] font-black uppercase tracking-[0.16em] text-blue-600">
-                              Click to edit / drag card to place
+                              Press Enter to edit / Space to drag card
                             </p>
+                            </button>
                           </article>
                         , taskSnapshot.isDragging)}
                       </Draggable>
@@ -2398,7 +2429,11 @@ export function BoardWorkspace({
                         <div className="tm-desk-header border-b border-blue-200 px-4 py-3" {...columnProvided.dragHandleProps}>
                           {editingColumnId === column.id ? (
                             <form onSubmit={(event) => handleRenameColumn(event, column.id)} className="flex gap-2">
+                              <label htmlFor={`column-title-${column.id}`} className="sr-only">
+                                Desk name
+                              </label>
                               <input
+                                id={`column-title-${column.id}`}
                                 value={editingColumnTitle}
                                 onChange={(event) => setEditingColumnTitle(event.target.value)}
                                 className={smallInputClass}
@@ -2470,18 +2505,19 @@ export function BoardWorkspace({
                                     <article
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      onClick={() => {
-                                        setTaskComments([]);
-                                        setTaskAttachments([]);
-                                        setSelectedTaskId(task.id);
-                                      }}
                                       className={`${taskCardClass} ${
                                         snapshot.isDragging
                                           ? "tm-dragging-card shadow-lg ring-2 ring-blue-200"
                                           : ""
                                       }`}
                                     >
+                                      <button
+                                        type="button"
+                                        {...provided.dragHandleProps}
+                                        aria-label={`Open task: ${task.title}. Press Enter to edit or Space to drag.`}
+                                        onClick={() => openTaskInspector(task.id)}
+                                        className="block w-full text-left"
+                                      >
                                       <div className="mb-2 flex items-center justify-between gap-2">
                                         <span className="text-[9px] font-black uppercase tracking-[0.16em] text-blue-600">
                                           Work card
@@ -2529,6 +2565,7 @@ export function BoardWorkspace({
                                           </span>
                                         )}
                                       </div>
+                                      </button>
                                     </article>
                                   , snapshot.isDragging)}
                                 </Draggable>
@@ -2566,7 +2603,11 @@ export function BoardWorkspace({
                     onSubmit={handleCreateColumn}
                     className={addColumnClass}
                   >
+                    <label htmlFor="new-desk-name" className="sr-only">
+                      New desk name
+                    </label>
                     <input
+                      id="new-desk-name"
                       value={columnTitle}
                       onChange={(event) => setColumnTitle(event.target.value)}
                       placeholder="New desk name"

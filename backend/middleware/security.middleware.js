@@ -104,5 +104,6 @@ module.exports = {
   authLimiter,
   configureSecurity,
   generalLimiter,
+  getAllowedOrigins,
   uploadLimiter,
 };

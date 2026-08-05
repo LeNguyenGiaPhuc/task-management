@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth.middleware');
+const { clearAuthCookie, setAuthCookie } = require('../utils/auth-session');
 const {
   comparePassword,
   ensureAuthColumn,
@@ -68,7 +69,8 @@ router.post('/register', async (req, res) => {
     const user = sanitizeUser(users[0]);
     const token = signToken(user);
 
-    res.status(201).json({ token, user });
+    setAuthCookie(res, token);
+    res.status(201).json({ user });
   } catch (error) {
     console.error('POST /api/auth/register failed:', error);
     res.status(500).json({ error: 'Server error while registering' });
@@ -94,7 +96,8 @@ router.post('/login', async (req, res) => {
     const cleanUser = sanitizeUser(user);
     const token = signToken(cleanUser);
 
-    res.status(200).json({ token, user: cleanUser });
+    setAuthCookie(res, token);
+    res.status(200).json({ user: cleanUser });
   } catch (error) {
     console.error('POST /api/auth/login failed:', error);
     res.status(500).json({ error: 'Server error while logging in' });
@@ -179,11 +182,17 @@ router.get('/google/callback', async (req, res) => {
     const user = await upsertGoogleUser(profile);
     const appToken = signToken(user);
 
-    redirectToFrontend(res, { token: appToken });
+    setAuthCookie(res, appToken);
+    redirectToFrontend(res, {});
   } catch (callbackError) {
     console.error('GET /api/auth/google/callback failed:', callbackError);
     redirectToFrontend(res, { auth_error: 'google_login_failed' });
   }
+});
+
+router.post('/logout', (req, res) => {
+  clearAuthCookie(res);
+  res.status(204).end();
 });
 
 router.get('/me', requireAuth, (req, res) => {
