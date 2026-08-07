@@ -2325,18 +2325,21 @@ export function BoardWorkspace({
                           <article
                             ref={taskProvided.innerRef}
                             {...taskProvided.draggableProps}
+                            {...taskProvided.dragHandleProps}
+                            aria-label={`Open task: ${task.title}. Press Enter to edit or Space to drag.`}
+                            onClick={() => openTaskInspector(task.id)}
+                            onKeyDownCapture={(event) => {
+                              if (event.key !== "Enter") return;
+                              event.preventDefault();
+                              event.stopPropagation();
+                              openTaskInspector(task.id);
+                            }}
                             className={`tm-tray-draft border p-3 ${
                               taskSnapshot.isDragging ? "tm-dragging-card shadow-xl ring-2 ring-blue-400" : ""
                             }`}
                           >
-                            <button
-                              type="button"
-                              {...taskProvided.dragHandleProps}
-                              aria-label={`Open task: ${task.title}. Press Enter to edit or Space to drag.`}
-                              onClick={() => openTaskInspector(task.id)}
-                              className="block w-full text-left"
-                            >
-                            <div className="flex items-start gap-3">
+                            <div>
+                              <div className="flex items-start gap-3">
                               <span className="mt-1 h-2 w-2 shrink-0 bg-lime-400" />
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-bold leading-5 text-slate-900">
@@ -2361,7 +2364,7 @@ export function BoardWorkspace({
                             <p className="mt-3 text-[9px] font-black uppercase tracking-[0.16em] text-blue-600">
                               Press Enter to edit / Space to drag card
                             </p>
-                            </button>
+                            </div>
                           </article>
                         , taskSnapshot.isDragging)}
                       </Draggable>
@@ -2505,19 +2508,22 @@ export function BoardWorkspace({
                                     <article
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      aria-label={`Open task: ${task.title}. Press Enter to edit or Space to drag.`}
+                                      onClick={() => openTaskInspector(task.id)}
+                                      onKeyDownCapture={(event) => {
+                                        if (event.key !== "Enter") return;
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        openTaskInspector(task.id);
+                                      }}
                                       className={`${taskCardClass} ${
                                         snapshot.isDragging
                                           ? "tm-dragging-card shadow-lg ring-2 ring-blue-200"
                                           : ""
                                       }`}
                                     >
-                                      <button
-                                        type="button"
-                                        {...provided.dragHandleProps}
-                                        aria-label={`Open task: ${task.title}. Press Enter to edit or Space to drag.`}
-                                        onClick={() => openTaskInspector(task.id)}
-                                        className="block w-full text-left"
-                                      >
+                                      <div>
                                       <div className="mb-2 flex items-center justify-between gap-2">
                                         <span className="text-[9px] font-black uppercase tracking-[0.16em] text-blue-600">
                                           Work card
@@ -2565,7 +2571,7 @@ export function BoardWorkspace({
                                           </span>
                                         )}
                                       </div>
-                                      </button>
+                                      </div>
                                     </article>
                                   , snapshot.isDragging)}
                                 </Draggable>
